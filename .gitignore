@@ -1,3 +1,6 @@
+**lightning_logs/
+**data/
+**/dataset/
 *.DS_Store
 .vscode
 
