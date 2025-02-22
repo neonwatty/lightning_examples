@@ -1,0 +1,6 @@
+ipykernel
+torch
+lightning
+torchvision
+datasets
+transformers
