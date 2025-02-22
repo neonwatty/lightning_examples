@@ -1,6 +1,6 @@
 ipykernel
 torch
-lightning
+lightning[extra]
 torchvision
 datasets
 transformers
