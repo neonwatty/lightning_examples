@@ -4,3 +4,6 @@ lightning[extra]
 torchvision
 datasets
 transformers
+tensorboard
+torch-tb-profiler
+torchmetrics
