@@ -1,6 +1,7 @@
 import torch
 import pytest
 from torch.utils.data import Dataset, DataLoader
+from network_vanilla.blocks import FullyConnectedBlock
 from network_vanilla.model import init_model
 
 
@@ -9,8 +10,8 @@ class TestDataset(Dataset):
         self.num_samples = num_samples
         self.input_dim = input_dim
         self.num_classes = num_classes
-        self.x = torch.randn(num_samples, input_dim)  # Random input features
-        self.y = torch.randint(0, num_classes, (num_samples,))  # Multi-class labels
+        self.x = torch.randn(num_samples, input_dim)
+        self.y = torch.randint(0, num_classes, (num_samples,))
 
     def __len__(self):
         return self.num_samples
@@ -51,9 +52,13 @@ def dataloader(dataset):
 
 
 @pytest.fixture
-def model():
+def blocks(dataset):
+    blocks = FullyConnectedBlock(dataset.x.shape[1], dataset.y.shape[0])
+    return blocks
+
+@pytest.fixture
+def model(blocks):
     # get test dataset shape
-    dataset = TestDataset()
     x_shape, y_shape = dataset.shape()
     input_size = x_shape[1]
     num_classes = y_shape[0]

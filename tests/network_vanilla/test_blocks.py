@@ -3,31 +3,20 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pytest
 
 
-def test_basic(shared_data):
-    # unpack shared data
-    input_size = shared_data['input_size']
-    num_classes = shared_data['num_classes']
-    block = blocks.FullyConnectedBlock(input_size, num_classes)
-    assert isinstance(block, nn.Module)
-    assert len(list(block.parameters())) == 4
+def test_basic(dataset, blocks):
+    assert isinstance(blocks, nn.Module)
+    assert len(list(blocks.parameters())) == 4
 
 
-def test_forward(shared_data, subtests):
-    # unpack shared data
-    input_size = shared_data['input_size']
-    num_classes = shared_data['num_classes']
+def test_forward(dataset, subtests):
+    # pass single datapoint through blocks
+    out = blocks(dataset.x[0])
 
-    # instantiate block
-    block = blocks.FullyConnectedBlock(input_size, num_classes)
-
-    # create single test datapoint
-    x = torch.tensor(np.random.rand(1, input_size), dtype=torch.float32)
-
-    # pass through block
-    out = block(x)
+    # unpack num_classes from dataset
+    input_size = dataset.x.shape[1]
+    num_classes = dataset.y.shape[0]
 
     # check output shape
     with subtests.test(msg="single shape is incorrect"):
@@ -35,15 +24,12 @@ def test_forward(shared_data, subtests):
     with subtests.test(msg="single dtype is incorrect"):
         assert out.dtype == torch.float32, "single dtype is incorrect"
     
-    # create test batch
-    x = torch.tensor(np.random.rand(5, input_size), dtype=torch.float32)
-
-    # pass through block
-    out = block(x)
+    # pass batch through blocks
+    out = blocks(dataset.x)
 
     # check output shape
     with subtests.test(msg="batch shape is incorrect"):
-        assert out.shape == (5, num_classes), "batch shape is incorrect"
+        assert out.shape == (dataset.x.shape[0], num_classes), "batch shape is incorrect"
     with subtests.test(msg="batch dtype is incorrect"):
         assert out.dtype == torch.float32, "batch dtype is incorrect"
 
