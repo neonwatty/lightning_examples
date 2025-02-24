@@ -10,8 +10,7 @@ from network_vanilla.blocks import FullyConnectedBlock
 from network_vanilla.dataset import DataModule
 
 
-
-torch.set_float32_matmul_precision("medium") # to make lightning happy
+torch.set_float32_matmul_precision("medium")  # to make lightning happy
 
 
 if __name__ == "__main__":

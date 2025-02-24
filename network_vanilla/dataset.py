@@ -67,7 +67,7 @@ class DataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             shuffle=False,
         )
-    
+
     def sample_dataloader(self):
         # Return the sample dataloader for testing purposes
         return self.train_dataloader()  # This will use the subset or full dataset
