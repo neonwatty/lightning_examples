@@ -4,15 +4,31 @@ from torch.utils.data import Dataset, DataLoader
 from network_vanilla.blocks import FullyConnectedBlock
 from network_vanilla.model import init_model
 from network_vanilla.dataset import DataModule
-import os
-import shutil
+from pytorch_lightning.callbacks import Callback
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import Callback
+
+
+class OverfitCallback(Callback):
+    def __init__(self, threshold=0.95):
+        super().__init__()
+        self.threshold = threshold
+
+    def on_train_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs, batch, batch_idx):
+        # Assuming the model returns 'train_accuracy' in the outputs dictionary
+        current_accuracy = outputs.get('train_accuracy', 0)  # Default to 0 if key is not present
+
+        # Check if the accuracy exceeds the threshold
+        if current_accuracy >= self.threshold:
+            trainer.should_stop = True
+            print(f"Accuracy reached {current_accuracy:.4f}, training stopped.")
 
 
 @pytest.fixture
 def config():
     return {
         "sample_size": 100,
-        "batch_size": 16,
+        "batch_size": 2,
         "num_batches": 10,
         "dev_mode": True,
         "data_dir": "./tests/network_vanilla/dataset",
@@ -62,3 +78,7 @@ def model(sample_data):
 
     # return initialized model
     return init_model(input_size, num_classes)
+
+@pytest.fixture
+def overfit_callback():
+    return OverfitCallback()

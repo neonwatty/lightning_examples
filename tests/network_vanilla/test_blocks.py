@@ -18,7 +18,7 @@ def test_forward(sample_data, blocks, subtests):
     y = y[0:1]
 
     # pass through blocks
-    out = blocks(x)
+    out = blocks.forward(x)
 
     # check shapes
     num_classes = sample_data.shapes['num_classes']
@@ -35,13 +35,14 @@ def test_forward(sample_data, blocks, subtests):
         assert out.dtype == torch.float32, "batch dtype is incorrect"
 
 
-def test_backward(dataset, dataloader, blocks):
+def test_backward(sample_data, blocks):
     # unpack batch
-    batch = next(iter(dataloader))
-    x, y = batch
+    x, y = next(iter(sample_data.train_dataloader()))
 
     # pass through block
     out = blocks(x)
+
+    # add loss
     loss = F.cross_entropy(out, y)
 
     # check loss

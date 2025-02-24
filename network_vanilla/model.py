@@ -24,7 +24,7 @@ class NN(pl.LightningModule):
         accuracy = self.accuracy(scores, y)
         f1_score = self.f1_score(scores, y)
         self.log_dict({'train_loss': loss, 'train_accuracy': accuracy, 'train_f1_score': f1_score}, on_step=False, on_epoch=True, prog_bar=True)
-        return {'loss': loss, "scores": scores, "y": y}
+        return {'loss': loss, "scores": scores, "y": y, "train_accuracy": accuracy}
 
     # def on_train_epoch_end(self, outputs):
     #     # named method for compute at the end of an epoch only
