@@ -7,3 +7,4 @@ transformers
 tensorboard
 torch-tb-profiler
 torchmetrics
+pre-commit

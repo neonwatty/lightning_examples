@@ -34,5 +34,5 @@ exclude = [
     "scratch_notebooks",
     "release_notes",
     "notebook_tests",
-    "demos"
+    "demos",
 ]
