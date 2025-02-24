@@ -7,7 +7,7 @@ from pytorch_lightning.profilers import PyTorchProfiler
 from network_vanilla.callbacks import MyPrintingCallback, EarlyStopping
 import network_vanilla.config as config
 from network_vanilla.blocks import FullyConnectedBlock
-from network_vanilla.dataset import MnistDataModule
+from network_vanilla.dataset import DataModule
 
 
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     model = NN(fully_connected_block=fully_connected_block, num_classes=config.NUM_CLASSES)
 
     # initialize data module
-    dm = MnistDataModule(
+    dm = DataModule(
         data_dir=config.DATA_DIR,
         batch_size=config.BATCH_SIZE,
         num_workers=config.NUM_WORKERS,
