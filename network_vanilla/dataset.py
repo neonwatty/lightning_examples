@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Subset
 from torch.utils.data import random_split
 import pytorch_lightning as pl
+import torch
 
 
 class DataModule(pl.LightningDataModule):
@@ -75,9 +76,8 @@ class DataModule(pl.LightningDataModule):
     def shapes(self):
         # Return the shapes of the dataset
         x, y = self.train_ds[0]
-        input_shape = x.shape
 
-        # input_size is vectorized shape of a single datapoint
-        input_size = input_shape[0] * input_shape[1] * input_shape[2]
+        # flatten input_shape into input_size
+        input_size = torch.flatten(x).shape[0]
         num_classes = 10
         return {"input_size": input_size, "num_classes": num_classes}
