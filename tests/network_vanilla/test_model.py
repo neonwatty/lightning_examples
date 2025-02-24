@@ -58,6 +58,12 @@ def test_backward(sample_data, model):
         assert False, "no parameters to check"
 
 
+def test_fast_dev_run(sample_data, model):
+    trainer = pl.Trainer(fast_dev_run=True)
+    trainer.fit(model, sample_data)
+    assert trainer.global_step > 0, "Trainer did not execute any steps"
+
+
 # test to make sure we can overfit a single batch using pytorch lightning
 def test_overfit_batch(sample_data, model, overfit_callback):
     # overfit a single batch
