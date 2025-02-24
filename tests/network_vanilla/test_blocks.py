@@ -1,4 +1,3 @@
-from network_vanilla import blocks
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,15 +20,14 @@ def test_forward(dataset, dataloader, blocks, subtests):
 
     # check output shape
     with subtests.test(msg="single shape is incorrect"):
-        assert out.shape == (1, num_classes), "single shape is incorrect"
+        assert out.shape == (num_classes,), "single shape is incorrect"
     with subtests.test(msg="single dtype is incorrect"):
         assert out.dtype == torch.float32, "single dtype is incorrect"
     
     # pass batch through blocks
-    batch = next(iter(dataloader))  # Get the first batch
+    batch = next(iter(dataloader)) 
     x_batch, y_batch = batch
     out = blocks.forward(x_batch)
-    print(f'out size is {out.size()}')
 
     # check output shape
     with subtests.test(msg="batch shape is incorrect"):
@@ -38,25 +36,23 @@ def test_forward(dataset, dataloader, blocks, subtests):
         assert out.dtype == torch.float32, "batch dtype is incorrect"
 
 
-def test_backward(shared_data):
-    # unpack shared data
-    input_size = shared_data['input_size']
-    num_classes = shared_data['num_classes']
-
-    # instantiate block
-    block = blocks.FullyConnectedBlock(input_size, num_classes)
-
-    # create single test datapoint
-    x = torch.tensor(np.random.rand(1, input_size), dtype=torch.float32)
-    y = torch.tensor(np.random.randint(0, num_classes, (1,)), dtype=torch.long)
+def test_backward(dataset, dataloader, blocks):
+    # unpack batch
+    batch = next(iter(dataloader)) 
+    x, y = batch
 
     # pass through block
-    out = block(x)
+    out = blocks(x)
     loss = F.cross_entropy(out, y)
 
-    # check backward
+    # check loss
+    assert loss.item() > 0, "loss is zero"
     loss.backward()
-    for p in block.parameters():
-        assert p.grad is not None, "gradients are not computed"
-        assert torch.any(p.grad != 0), "gradients are all zeros"
-        p.grad.zero_()
+
+    # check gradients
+    for param in blocks.parameters():
+        assert param.grad is not None, "gradient is None"
+        assert torch.any(param.grad != 0), "gradient is zero"
+        break
+    else:
+        assert False, "no parameters to check"

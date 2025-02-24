@@ -49,21 +49,22 @@ def dataset(shared_data):
 @pytest.fixture
 def dataloader(shared_data, dataset):
     batch_size = shared_data['batch_size']
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 
 @pytest.fixture
-def blocks(dataset):
-    blocks = FullyConnectedBlock(dataset.x.shape[1], dataset.y.shape[0])
+def blocks(shared_data, dataset):
+    num_classes = shared_data['num_classes']
+    input_size = shared_data['input_size']
+    blocks = FullyConnectedBlock(input_size, num_classes)
     return blocks
 
 
 @pytest.fixture
-def model(blocks):
-    # get test dataset shape
-    x_shape, y_shape = dataset.shape()
-    input_size = x_shape[1]
-    num_classes = y_shape[0]
+def model(shared_data, blocks):
+    # unpack shared data
+    input_size = shared_data['input_size']
+    num_classes = shared_data['num_classes']
 
     # return initialized model
     return init_model(input_size, num_classes)
