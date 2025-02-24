@@ -2,7 +2,7 @@ import torch
 from torch import nn, optim
 import torchmetrics
 import pytorch_lightning as pl
-from blocks import FullyConnectedBlock
+from network_vanilla.blocks import FullyConnectedBlock
 
 
 class NN(pl.LightningModule):
@@ -56,3 +56,8 @@ class NN(pl.LightningModule):
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=0.001)
+
+
+def init_model(input_size, num_classes):
+    block = FullyConnectedBlock(input_size, num_classes)
+    return NN(block, num_classes)

@@ -1,12 +1,15 @@
 import torch
 import pytorch_lightning as pl
-from blocks import FullyConnectedBlock
 from model import NN
-from dataset import MnistDataModule
-from callbacks import MyPrintingCallback, EarlyStopping
-import config
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.profilers import PyTorchProfiler
+
+from network_vanilla.callbacks import MyPrintingCallback, EarlyStopping
+import network_vanilla.config as config
+from network_vanilla.blocks import FullyConnectedBlock
+from network_vanilla.dataset import MnistDataModule
+
+
 
 torch.set_float32_matmul_precision("medium") # to make lightning happy
 
