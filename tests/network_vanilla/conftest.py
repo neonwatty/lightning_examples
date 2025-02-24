@@ -6,11 +6,11 @@ from network_vanilla.model import init_model
 
 
 class TestDataset(Dataset):
-    def __init__(self, num_samples=100, input_dim=10, num_classes=5):
+    def __init__(self, num_samples=100, input_size=10, num_classes=5):
         self.num_samples = num_samples
-        self.input_dim = input_dim
+        self.input_size = input_size
         self.num_classes = num_classes
-        self.x = torch.randn(num_samples, input_dim)
+        self.x = torch.randn(num_samples, input_size)
         self.y = torch.randint(0, num_classes, (num_samples,))
 
     def __len__(self):
@@ -19,8 +19,8 @@ class TestDataset(Dataset):
     def __getitem__(self, idx):
         return self.x[idx], self.y[idx]
 
-    def shape(self):
-        return self.x.shape, self.y.shape
+    def shapes(self):
+        return {"num_samples": self.num_samples, "input_size": self.input_size, "num_classes": self.num_classes}
 
 
 @pytest.fixture
@@ -47,14 +47,16 @@ def dataset(shared_data):
 
 
 @pytest.fixture
-def dataloader(dataset):
-    return DataLoader(dataset, batch_size=16, shuffle=True)
+def dataloader(shared_data, dataset):
+    batch_size = shared_data['batch_size']
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 
 @pytest.fixture
 def blocks(dataset):
     blocks = FullyConnectedBlock(dataset.x.shape[1], dataset.y.shape[0])
     return blocks
+
 
 @pytest.fixture
 def model(blocks):

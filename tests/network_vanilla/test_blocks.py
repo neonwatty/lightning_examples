@@ -10,13 +10,14 @@ def test_basic(dataset, blocks):
     assert len(list(blocks.parameters())) == 4
 
 
-def test_forward(dataset, subtests):
+def test_forward(dataset, dataloader, blocks, subtests):
     # pass single datapoint through blocks
-    out = blocks(dataset.x[0])
+    x, y = dataset[0]
+    out = blocks(x)
 
     # unpack num_classes from dataset
-    input_size = dataset.x.shape[1]
-    num_classes = dataset.y.shape[0]
+    shape_dict = dataset.shapes()
+    num_classes = shape_dict['num_classes']
 
     # check output shape
     with subtests.test(msg="single shape is incorrect"):
@@ -25,11 +26,14 @@ def test_forward(dataset, subtests):
         assert out.dtype == torch.float32, "single dtype is incorrect"
     
     # pass batch through blocks
-    out = blocks(dataset.x)
+    batch = next(iter(dataloader))  # Get the first batch
+    x_batch, y_batch = batch
+    out = blocks.forward(x_batch)
+    print(f'out size is {out.size()}')
 
     # check output shape
     with subtests.test(msg="batch shape is incorrect"):
-        assert out.shape == (dataset.x.shape[0], num_classes), "batch shape is incorrect"
+        assert out.shape == (x_batch.shape[0], num_classes), "batch shape is incorrect"
     with subtests.test(msg="batch dtype is incorrect"):
         assert out.dtype == torch.float32, "batch dtype is incorrect"
 
