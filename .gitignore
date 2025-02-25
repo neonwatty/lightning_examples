@@ -1,6 +1,7 @@
 scratch.ipynb
 **profiler_logs/
 **lightning_logs/
+**cache/
 **data/
 **/dataset/
 **/tokenizers/

@@ -4,10 +4,10 @@ from model import NN
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.profilers import PyTorchProfiler
 
-from network_vanilla.callbacks import MyPrintingCallback, EarlyStopping
-import network_vanilla.config as config
-from network_vanilla.blocks import FullyConnectedBlock
-from network_vanilla.dataset import DataModule
+from network_transformer_encoder_decoder.callbacks import MyPrintingCallback, EarlyStopping
+import network_transformer_encoder_decoder.config as config
+from network_transformer_encoder_decoder.blocks import Transformer
+from network_transformer_encoder_decoder.dataset import DataModule
 
 
 torch.set_float32_matmul_precision("medium")  # to make lightning happy
@@ -16,20 +16,21 @@ torch.set_float32_matmul_precision("medium")  # to make lightning happy
 if __name__ == "__main__":
     # set profiler
     profiler = PyTorchProfiler(
-        on_trace_ready=torch.profiler.tensorboard_trace_handler("profiler_logs/profiler0"),
+        on_trace_ready=torch.profiler.tensorboard_trace_handler("profiler_logs/profiler-transformer-encoder-deocder"),
         schedule=torch.profiler.schedule(skip_first=10, wait=1, warmup=1, active=20),
     )
 
     # setup logger
-    logger = TensorBoardLogger("tb_logs", name="mnist_model_v1")
+    logger = TensorBoardLogger("tb_logs", name="transformer_ed_model_v1")
 
     # Initialize network
-    fully_connected_block = FullyConnectedBlock(input_size=config.INPUT_SIZE, num_classes=config.NUM_CLASSES)
+    fully_connected_block = Transformer()
     model = NN(fully_connected_block=fully_connected_block, num_classes=config.NUM_CLASSES)
 
     # initialize data module
     dm = DataModule(
-        dataset_name=config.DATASET_NAME,
+        dataset_name=config.PYTHON_TEST_DATASET_NAME,
+        subset_name=config.PYTHON_TEST_SUBSET_NAME,
         batch_size=config.BATCH_SIZE,
         cache_dir=config.DATA_DIR,
         num_workers=config.NUM_WORKERS,

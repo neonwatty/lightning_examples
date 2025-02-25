@@ -11,32 +11,34 @@ from torch.utils.data import DataLoader, random_split
 class HuggingFaceDataset(Dataset):
     def __init__(
         self,
-        hf_dataset,
+        dataset_name,
+        subset_name,
         source_tokenizer,
         target_tokenizer,
+        cache_dir="cache/",
         source_lang="source_text",
         target_lang="target_text",
         max_length=512,
-        source_tokenizer_path="./tokenizers/source_tokenizer.json",
-        target_tokenizer_path="./tokenizers/target_tokenizer.json",
     ):
         """
         Args:
-            hf_dataset: A Hugging Face dataset object.
+            dataset_name: The name of the Hugging Face dataset to use.
+            subset_name: The name of the subset of the dataset to use.
             source_tokenizer: Tokenizer for the source language.
             target_tokenizer: Tokenizer for the target language.
             source_lang (str): The key for the source language text.
             target_lang (str): The key for the target language text.
             max_length (int): Maximum sequence length for tokenization.
         """
-        self.dataset = hf_dataset
+        # load in the dataset
+        self.dataset = datasets.load_dataset(dataset_name, subset_name, cache_dir=cache_dir + "dataset/")
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.max_length = max_length
 
         # Load tokenizers from disk if available, otherwise train them
-        self.source_tokenizer = self.load_or_train_tokenizer(self.source_tokenizer_path, self.source_lang)
-        self.target_tokenizer = self.load_or_train_tokenizer(self.target_tokenizer_path, self.target_lang)
+        self.source_tokenizer = self.load_or_train_tokenizer(cache_dir + "tokenizers/" + "source_tokenizer_{}.json".format(source_lang), source_lang)
+        self.target_tokenizer = self.load_or_train_tokenizer(cache_dir + "tokenizers/" + "target_tokenizer_{}.json".format(target_lang), target_lang)
 
     def load_or_train_tokenizer(self, tokenizer_path, lang_key):
         """
@@ -106,19 +108,20 @@ class HuggingFaceDataset(Dataset):
 class TranslationDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        hf_dataset,
+        dataset_name,
+        subset_name,
         source_lang="en",
         target_lang="es",
         batch_size=32,
         max_length=512,
-        source_tokenizer_path="./tokenizers/source_tokenizer.json",
-        target_tokenizer_path="./tokenizers/target_tokenizer.json",
+        cache_dir="cache/",
         val_split=0.1,
         test_split=0.1,
     ):
         """
         Args:
-            hf_dataset: A Hugging Face dataset object.
+            dataset_name: The name of the Hugging Face dataset to use.
+            subset_name: The name of the subset of the dataset to use.
             source_lang (str): The key for the source language text.
             target_lang (str): The key for the target language text.
             batch_size (int): The batch size for DataLoader.
@@ -136,7 +139,8 @@ class TranslationDataModule(pl.LightningDataModule):
 
         # Initialize HuggingFaceDataset for training, validation, and testing
         self.train_dataset = HuggingFaceDataset(
-            hf_dataset,
+            dataset_name,
+            subset_name,
             source_lang=source_lang,
             target_lang=target_lang,
             max_length=max_length,

@@ -25,7 +25,6 @@ class ModelDimensions:
     tgt_seq_len: int
     n_head: int
     n_layers: int
-    d_ff: int
     dropout: float
 
 
