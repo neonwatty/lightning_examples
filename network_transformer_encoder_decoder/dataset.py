@@ -71,9 +71,6 @@ class HuggingFaceDataset(Dataset):
         source_texts = [item["translation"][self.source_lang] for item in self.dataset]
         target_texts = [item["translation"][self.target_lang] for item in self.dataset]
 
-        print(f"source_texts: {source_texts[:5]}")
-        print(f"target_texts: {target_texts[:5]}")
-
         # Train the source tokenizer
         tokenizer = Tokenizer(BPE())
         tokenizer.pre_tokenizer = Whitespace()
@@ -152,6 +149,15 @@ class DataModule(pl.LightningDataModule):
         self.train_dataset = HuggingFaceDataset(
             dataset_name, subset_name, source_lang=source_lang, target_lang=target_lang, max_length=max_seq_len, cache_dir=cache_dir
         )
+
+        # loop over dataset and print the length of each element: input_ids, src_mask, labels, tgt_mask
+        for i in range(len(self.train_dataset)):
+            print(
+                len(self.train_dataset[i]["input_ids"]),
+                len(self.train_dataset[i]["src_mask"]),
+                len(self.train_dataset[i]["labels"]),
+                len(self.train_dataset[i]["tgt_mask"]),
+            )
 
         # Split dataset into training, validation, and test sets
         total_len = len(self.train_dataset)

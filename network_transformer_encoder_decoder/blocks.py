@@ -201,7 +201,7 @@ class ResidualAttentionBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, n_mels: int, n_ctx: int, n_state: int, n_head: int, n_layer: int):
+    def __init__(self, n_ctx: int, n_state: int, n_head: int, n_layer: int):
         super().__init__()
 
         # setup positional embedding
@@ -263,7 +263,7 @@ class Transformer(nn.Module):
     def __init__(self, dims: ModelDimensions):
         super().__init__()
         self.dims = dims
-        self.encoder = Encoder(dims.src_vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
+        self.encoder = Encoder(dims.src_vocab_size, dims.d_model, dims.n_head, dims.n_layers)
         self.decoder = Decoder(dims.tgt_vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
 
     def forward(self, x: Tensor, xa: Tensor):

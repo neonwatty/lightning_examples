@@ -1,7 +1,6 @@
 import pytorch_lightning as pl
 from network_transformer_encoder_decoder.model import NN
 from network_transformer_encoder_decoder.blocks import Transformer
-from network_transformer_encoder_decoder.config import ModelDimensions
 from network_transformer_encoder_decoder.config import DATA_CONFIG, MODEL_CONFIG
 from network_transformer_encoder_decoder.dataset import DataModule
 
