@@ -41,7 +41,7 @@ def create_sample_dataset(full_dataset_name, sample_count=100, username="neonwat
     train_sample = dataset["train"].shuffle(seed=42).select(range(sample_count))
     test_sample = dataset["test"].shuffle(seed=42).select(range(sample_count))
 
-    # push to hub
+    # Push to hub
     train_sample.push_to_hub(dataset_name_sample, split="train")
     print("INFO: Train split pushed to the hub successfully")
 

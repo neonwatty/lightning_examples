@@ -6,7 +6,7 @@ from network_vanilla.model import init_model
 from network_vanilla.dataset import DataModule
 from pytorch_lightning.callbacks import Callback
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import Callback
+import network_vanilla.config as network_config
 
 
 class OverfitCallback(Callback):
@@ -33,6 +33,7 @@ def config():
         "dev_mode": True,
         "data_dir": "./tests/network_vanilla/dataset",
         "num_workers": 2,
+        "python_test_dataset_name": network_config.PYTHON_TEST_DATASET_NAME,
     }
 
 
@@ -45,11 +46,12 @@ def sample_data(config):
     # os.makedirs(data_dir, exist_ok=True)
 
     # create sample data
-    data_dir = config['data_dir']
-    batch_size = config['batch_size']
-    num_workers = config['num_workers']
-    sample_size = config['sample_size']
-    data_module_sample = DataModule(data_dir, batch_size, num_workers, sample_size)
+    data_module_sample = DataModule(
+        dataset_name=config['python_test_dataset_name'],
+        batch_size=config['batch_size'],
+        cache_dir=config['data_dir'],
+        num_workers=config['num_workers'],
+    )
     data_module_sample.prepare_data()
     data_module_sample.setup()
     return data_module_sample
@@ -57,7 +59,7 @@ def sample_data(config):
 
 @pytest.fixture
 def dataset(sample_data):
-    return sample_data.train_ds
+    return sample_data.train_dataset
 
 
 @pytest.fixture

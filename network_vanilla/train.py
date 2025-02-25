@@ -29,8 +29,9 @@ if __name__ == "__main__":
 
     # initialize data module
     dm = DataModule(
-        data_dir=config.DATA_DIR,
+        dataset_name=config.DATASET_NAME,
         batch_size=config.BATCH_SIZE,
+        cache_dir=config.DATA_DIR,
         num_workers=config.NUM_WORKERS,
     )
 
