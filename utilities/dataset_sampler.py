@@ -1,7 +1,7 @@
 import sys
 import os
 import datasets
-from huggingface_hub import HfApi, upload_file, login
+from huggingface_hub import HfApi, upload_file
 
 
 def update_dataset_card(dataset_id: str, update: str, cache_dir="./dataset"):
