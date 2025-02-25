@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch import Tensor
 import math
 from typing import Dict, Iterable, Optional, Tuple
+import numpy as np
+from dataclasses import dataclass
 
 try:
     from torch.nn.functional import scaled_dot_product_attention
@@ -12,6 +14,19 @@ try:
 except (ImportError, RuntimeError, OSError):
     scaled_dot_product_attention = None
     SDPA_AVAILABLE = False
+
+
+@dataclass
+class ModelDimensions:
+    src_vocab_size: int
+    tgt_vocab_size: int
+    d_model: int
+    src_seq_len: int
+    tgt_seq_len: int
+    n_head: int
+    n_layers: int
+    d_ff: int
+    dropout: float
 
 
 class LayerNorm(nn.LayerNorm):
@@ -224,3 +239,49 @@ class Encoder(nn.Module):
         # apply layer norm
         x = self.ln_post(x)
         return x
+
+
+class Decoder(nn.Module):
+    def __init__(self, n_vocab: int, seq_len: int, d_model: int, n_head: int, n_layer: int):
+        super().__init__()
+        # setup token and positional embeddings
+        self.token_embedding = InputEmbeddings(d_model, n_vocab)
+        self.positional_embedding = PositionalEncoding(d_model, seq_len, 0.1)
+
+        # setup residual attention blocks
+        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList(
+            [ResidualAttentionBlock(d_model, n_head, cross_attention=True) for _ in range(n_layer)]
+        )
+        self.ln = LayerNorm(d_model)
+
+        # setup mask
+        mask = torch.empty(seq_len, seq_len).fill_(-np.inf).triu_(1)
+        self.register_buffer("mask", mask, persistent=False)
+
+    def forward(self, x: Tensor, xa: Tensor, kv_cache: Optional[dict] = None):
+        # apply token and positional embeddings
+        offset = next(iter(kv_cache.values())).shape[1] if kv_cache else 0
+        x = self.token_embedding(x) + self.positional_embedding[offset : offset + x.shape[-1]]
+        x = x.to(xa.dtype)
+
+        # apply residual attention blocks
+        for block in self.blocks:
+            x = block(x, xa, mask=self.mask, kv_cache=kv_cache)
+        x = self.ln(x)
+
+        # project back to vocab (logits)
+        logits = (x @ torch.transpose(self.token_embedding.weight.to(x.dtype), 0, 1)).float()
+
+        return logits
+
+
+class Transformer(nn.Module):
+    def __init__(self, dims: ModelDimensions):
+        super().__init__()
+        self.dims = dims
+        self.encoder = Encoder(dims.src_vocab_size, dims.src_seq_len, dims.d_model, dims.n_head, dims.n_layers)
+        self.decoder = Decoder(dims.tgt_vocab_size, dims.tgt_seq_len, dims.d_model, dims.n_head, dims.n_layers)
+
+    def forward(self, x: Tensor, xa: Tensor):
+        x = self.encoder(x)
+        return self.decoder(x, xa)
