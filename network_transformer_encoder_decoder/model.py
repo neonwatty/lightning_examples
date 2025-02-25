@@ -16,8 +16,8 @@ class NN(pl.LightningModule):
         self.accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=dims.tgt_vocab_size)
         self.f1_score = torchmetrics.F1Score(task="multiclass", num_classes=dims.tgt_vocab_size)
 
-    def forward(self, x):
-        x = self.model(x)
+    def forward(self, x, y):
+        x = self.model(x, y)
         return x
 
     def training_step(self, batch, batch_idx):
@@ -43,8 +43,13 @@ class NN(pl.LightningModule):
 
     def _common_step(self, batch, batch_idx):
         x, y = batch
+
+        # Flatten input and output
         x = x.reshape(x.size(0), -1)
-        scores = self.forward(x)
+        y = y.reshape(y.size(0), -1)
+
+        # print shape of x and y
+        scores = self.forward(x, y)
         loss = self.loss_fn(scores, y)
         return loss, scores, y
 

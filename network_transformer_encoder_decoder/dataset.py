@@ -104,17 +104,28 @@ class HuggingFaceDataset(Dataset):
         source_tokens = self.source_tokenizer.encode(source_text)
         target_tokens = self.target_tokenizer.encode(target_text)
 
+        # Convert to ids
+        source_tokens = source_tokens.ids
+        target_tokens = target_tokens.ids
+
+        # Compute necessary padding
+        source_padding = self.max_length - len(source_tokens)
+        target_padding = self.max_length - len(target_tokens)
+
         # Ensure token lengths are within the maximum length
-        source_tokens = source_tokens.ids[: self.max_length]
-        target_tokens = target_tokens.ids[: self.max_length]
+        source_tokens = source_tokens[: self.max_length]
+        target_tokens = target_tokens[: self.max_length]
+
+        # Pad each max length with tokenized [PAD]
+        if source_padding > 0:
+            source_tokens += [self.source_tokenizer.token_to_id("[PAD]")] * source_padding
+        if target_padding > 0:
+            target_tokens += [self.target_tokenizer.token_to_id("[PAD]")] * target_padding
 
         # Return as a dictionary compatible with Hugging Face models
-        return {
-            "input_ids": torch.tensor(source_tokens),
-            "src_mask": torch.tensor([1] * len(source_tokens)),  # Attention mask for input
-            "labels": torch.tensor(target_tokens),
-            "tgt_mask": torch.tensor([1] * len(target_tokens)),  # Attention mask for target
-        }
+        input_ids = torch.tensor(source_tokens)
+        output_ids = torch.tensor(target_tokens)
+        return input_ids, output_ids
 
 
 class DataModule(pl.LightningDataModule):
@@ -149,15 +160,6 @@ class DataModule(pl.LightningDataModule):
         self.train_dataset = HuggingFaceDataset(
             dataset_name, subset_name, source_lang=source_lang, target_lang=target_lang, max_length=max_seq_len, cache_dir=cache_dir
         )
-
-        # loop over dataset and print the length of each element: input_ids, src_mask, labels, tgt_mask
-        for i in range(len(self.train_dataset)):
-            print(
-                len(self.train_dataset[i]["input_ids"]),
-                len(self.train_dataset[i]["src_mask"]),
-                len(self.train_dataset[i]["labels"]),
-                len(self.train_dataset[i]["tgt_mask"]),
-            )
 
         # Split dataset into training, validation, and test sets
         total_len = len(self.train_dataset)
