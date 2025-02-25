@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader, Dataset
 import pytorch_lightning as pl
 from torchvision import transforms
 from tokenizers import trainers, Tokenizer
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.models import BPE
 from torch.utils.data import DataLoader, random_split
 from network_transformer_encoder_decoder.config import DataConfig
 
@@ -27,11 +29,20 @@ class HuggingFaceDataset(Dataset):
             target_lang (str): The key for the target language text.
             max_length (int): Maximum sequence length for tokenization.
         """
+        # Create cache directories if they don't exist
+        os.makedirs(cache_dir + "tokenizers/", exist_ok=True)
+        os.makedirs(cache_dir + "dataset/", exist_ok=True)
+
         # load in the dataset
-        self.dataset = datasets.load_dataset(dataset_name, subset_name, cache_dir=cache_dir + "dataset/")
+        self.dataset = datasets.load_dataset(dataset_name, subset_name, split="train", cache_dir=cache_dir + "dataset/")
+
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.max_length = max_length
+
+        # Tokenizer paths
+        self.source_tokenizer_path = cache_dir + "tokenizers/" + "source_tokenizer_{}.json".format(source_lang)
+        self.target_tokenizer_path = cache_dir + "tokenizers/" + "target_tokenizer_{}.json".format(target_lang)
 
         # Load tokenizers from disk if available, otherwise train them
         self.source_tokenizer = self.load_or_train_tokenizer(cache_dir + "tokenizers/" + "source_tokenizer_{}.json".format(source_lang), source_lang)
@@ -46,7 +57,7 @@ class HuggingFaceDataset(Dataset):
             return Tokenizer.from_file(tokenizer_path)
         else:
             print(f"INFO: Training tokenizer for {lang_key}...")
-            tokenizer = self.train_tokenizer(lang_key)
+            tokenizer = self.train_tokenizers()
             tokenizer.save(tokenizer_path)  # Save the trained tokenizer
             return tokenizer
 
@@ -60,18 +71,25 @@ class HuggingFaceDataset(Dataset):
         source_texts = [item["translation"][self.source_lang] for item in self.dataset]
         target_texts = [item["translation"][self.target_lang] for item in self.dataset]
 
+        print(f"source_texts: {source_texts[:5]}")
+        print(f"target_texts: {target_texts[:5]}")
+
         # Train the source tokenizer
+        tokenizer = Tokenizer(BPE())
+        tokenizer.pre_tokenizer = Whitespace()
         source_trainer = trainers.BpeTrainer(vocab_size=32000, special_tokens=["[PAD]", "[BOS]", "[EOS]"])
-        self.source_tokenizer.train_from_iterator(source_texts, trainer=source_trainer)
-        self.source_tokenizer.save(self.source_tokenizer_path)  # Save the trained tokenizer
+        tokenizer.train_from_iterator(source_texts, trainer=source_trainer)
+        tokenizer.save(self.source_tokenizer_path)  # Save the trained tokenizer
 
         # Train the target tokenizer
+        tokenizer = Tokenizer(BPE())
+        tokenizer.pre_tokenizer = Whitespace()
         target_trainer = trainers.BpeTrainer(
             vocab_size=32000,
             special_tokens=["[PAD]", "[BOS]"],  # no eos for target
         )
-        self.target_tokenizer.train_from_iterator(target_texts, trainer=target_trainer)
-        self.target_tokenizer.save(self.target_tokenizer_path)  # Save the trained tokenizer
+        tokenizer.train_from_iterator(target_texts, trainer=target_trainer)
+        tokenizer.save(self.target_tokenizer_path)  # Save the trained tokenizer
 
         print(f"Tokenizers trained and saved to {self.source_tokenizer_path} and {self.target_tokenizer_path}.")
 
@@ -82,8 +100,8 @@ class HuggingFaceDataset(Dataset):
         item = self.dataset[idx]
 
         # Format text with special tokens
-        source_text = f"{self.source_tokenizer.bos_token} {item['translation'][self.source_lang]} {self.source_tokenizer.eos_token}"
-        target_text = f"{self.target_tokenizer.bos_token} {item['translation'][self.target_lang]}"
+        source_text = "[BOS]" + " " + item["translation"][self.source_lang] + " " + "[EOS]"
+        target_text = "[BOS]" + " " + item["translation"][self.target_lang]
 
         # Tokenize source text
         source_tokens = self.source_tokenizer.encode(source_text)

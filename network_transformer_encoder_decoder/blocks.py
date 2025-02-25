@@ -1,8 +1,8 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-import math
 from typing import Dict, Iterable, Optional, Tuple
 import numpy as np
 from network_transformer_encoder_decoder.config import ModelDimensions
@@ -81,11 +81,8 @@ class PositionalEncoding(nn.Module):
         # Apply cosine to odd indices
         pe[:, 1::2] = torch.cos(position * div_term)  # cos(position * (10000 ** (2i / d_model))
 
-        # Add a batch dimension to the positional encoding
-        self.pe = pe.unsqueeze(0)  # (1, seq_len, d_model)
-
-        # Register the positional encoding as a buffer
-        self.register_buffer("pe", self.pe)
+        # Register the positional encoding as a buffer directly
+        self.register_buffer("pe", pe.unsqueeze(0))  # (1, seq_len, d_model)
 
     def forward(self, x):
         x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)  # (batch, seq_len, d_model)
@@ -167,15 +164,15 @@ class MultiHeadAttentionBlock(nn.Module):
 
 
 class ResidualAttentionBlock(nn.Module):
-    def __init__(self, d_model: int, n_head: int, cross_attention: bool = False):
+    def __init__(self, d_model: int, n_head: int, dropout: float = 0.1, cross_attention: bool = False):
         super().__init__()
 
         # instantiate attention block
-        self.attn = MultiHeadAttentionBlock(d_model, n_head)
+        self.attn = MultiHeadAttentionBlock(d_model, n_head, dropout)
         self.attn_ln = LayerNorm(d_model)
 
         # define cross-attention block
-        self.cross_attn = MultiHeadAttentionBlock(d_model, n_head) if cross_attention else None
+        self.cross_attn = MultiHeadAttentionBlock(d_model, n_head, dropout) if cross_attention else None
         self.cross_attn_ln = LayerNorm(d_model) if cross_attention else None
 
         # define MLP block
