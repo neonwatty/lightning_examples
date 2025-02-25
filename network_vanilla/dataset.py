@@ -1,10 +1,30 @@
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.data import Subset
 from torch.utils.data import random_split
 import pytorch_lightning as pl
 import torch
+import datasets
+
+
+class HFDataset(Dataset):
+    def __init__(self, hf_dataset, transform=None):
+        self.dataset = hf_dataset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        item = self.dataset[idx]
+        image = item["image"].convert("L")  # Convert to grayscale
+        label = item["label"]
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
 
 
 class DataModule(pl.LightningDataModule):
@@ -17,8 +37,7 @@ class DataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         # Download the full dataset regardless of sample_size
-        datasets.MNIST(self.data_dir, train=True, download=True)
-        datasets.MNIST(self.data_dir, train=False, download=True)
+        datasets.load_dataset("mnist")
 
     def setup(self, stage=None):
         entire_dataset = datasets.MNIST(
