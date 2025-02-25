@@ -102,7 +102,7 @@ class HuggingFaceDataset(Dataset):
         }
 
 
-class TranslationDataModule(pl.LightningDataModule):
+class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         dataset_config: DataConfig,

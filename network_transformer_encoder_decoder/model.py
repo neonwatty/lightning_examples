@@ -9,7 +9,7 @@ from network_transformer_encoder_decoder.config import ModelDimensions
 class NN(pl.LightningModule):
     def __init__(self, model: Transformer, dims: ModelDimensions):
         super().__init__()
-        self.model = model
+        self.model = model(dims)
         self.loss_fn = nn.CrossEntropyLoss()
 
         # accuracy options
