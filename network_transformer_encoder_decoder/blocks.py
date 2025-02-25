@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch import Tensor
 import math
 from typing import Optional, Tuple
-from contextlib import contextmanager
 
 try:
     from torch.nn.functional import scaled_dot_product_attention
@@ -35,11 +34,12 @@ class FeedForward(nn.Module):
         self.model = nn.Sequential(
             Linear(d_model, d_ff),
             nn.Dropout(dropout),
+            nn.GELU(),
             Linear(d_ff, d_model),
+            nn.Dropout(dropout),
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        # (batch, seq_len, d_model) --> (batch, seq_len, d_ff) --> (batch, seq_len, d_model)
         return self.model(x)
 
 
@@ -161,3 +161,40 @@ class MultiHeadAttentionBlock(nn.Module):
             qk = qk.detach()
 
         return out, qk
+
+
+class ResidualAttentionBlock(nn.Module):
+    def __init__(self, d_model: int, n_head: int, cross_attention: bool = False):
+        super().__init__()
+
+        # instantiate attention block
+        self.attn = MultiHeadAttentionBlock(d_model, n_head)
+        self.attn_ln = LayerNorm(d_model)
+
+        # define cross-attention block
+        self.cross_attn = MultiHeadAttentionBlock(d_model, n_head) if cross_attention else None
+        self.cross_attn_ln = LayerNorm(d_model) if cross_attention else None
+
+        # define MLP block
+        n_mlp = d_model * 4
+        dropout = 0.1
+        self.mlp = FeedForward(d_model, n_mlp, dropout)
+        self.mlp_ln = LayerNorm(d_model)
+
+    def forward(
+        self,
+        x: Tensor,
+        xa: Optional[Tensor] = None,
+        mask: Optional[Tensor] = None,
+        kv_cache: Optional[dict] = None,
+    ):
+        # residual attention block
+        x = x + self.attn(self.attn_ln(x), mask=mask, kv_cache=kv_cache)[0]
+
+        # residual cross-attention block
+        if self.cross_attn:
+            x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache)[0]
+
+        # residual MLP block
+        x = x + self.mlp(self.mlp_ln(x))
+        return x
