@@ -1,11 +1,12 @@
+import os
 import torch
 import datasets
 from torch.utils.data import DataLoader, Dataset
 import pytorch_lightning as pl
 from torchvision import transforms
 from tokenizers import trainers, Tokenizer
-import os
 from torch.utils.data import DataLoader, random_split
+from network_transformer_encoder_decoder.config import DataConfig
 
 
 class HuggingFaceDataset(Dataset):
@@ -104,44 +105,34 @@ class HuggingFaceDataset(Dataset):
 class TranslationDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        dataset_name,
-        subset_name,
-        source_lang="en",
-        target_lang="es",
-        batch_size=32,
-        max_length=512,
-        cache_dir="cache/",
+        dataset_config: DataConfig,
+        batch_size=64,
         val_split=0.1,
         test_split=0.1,
     ):
         """
         Args:
-            dataset_name: The name of the Hugging Face dataset to use.
-            subset_name: The name of the subset of the dataset to use.
-            source_lang (str): The key for the source language text.
-            target_lang (str): The key for the target language text.
-            batch_size (int): The batch size for DataLoader.
-            max_length (int): Maximum sequence length for tokenization.
-            source_tokenizer_path (str): Path to load/save the trained source tokenizer.
-            target_tokenizer_path (str): Path to load/save the trained target tokenizer.
+            dataset_config (DataConfig): Configuration for the dataset.
+            batch_size (int): Batch size for training.
             val_split (float): Fraction of data to be used for validation.
             test_split (float): Fraction of data to be used for testing.
         """
         super().__init__()
+        # unpack dataset config
+        cache_dir = dataset_config.cache_dir
+        dataset_name = dataset_config.dataset_name
+        subset_name = dataset_config.dataset_subset
+        source_lang = dataset_config.source_lang
+        target_lang = dataset_config.target_lang
+        max_seq_len = dataset_config.max_seq_len
+        self.num_workers = dataset_config.num_workers
         self.batch_size = batch_size
-        self.max_length = max_length
         self.val_split = val_split
         self.test_split = test_split
 
         # Initialize HuggingFaceDataset for training, validation, and testing
         self.train_dataset = HuggingFaceDataset(
-            dataset_name,
-            subset_name,
-            source_lang=source_lang,
-            target_lang=target_lang,
-            max_length=max_length,
-            source_tokenizer_path=source_tokenizer_path,
-            target_tokenizer_path=target_tokenizer_path,
+            dataset_name, subset_name, source_lang=source_lang, target_lang=target_lang, max_length=max_seq_len, cache_dir=cache_dir
         )
 
         # Split dataset into training, validation, and test sets
@@ -157,7 +148,7 @@ class TranslationDataModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 
@@ -166,7 +157,7 @@ class TranslationDataModule(pl.LightningDataModule):
             self.val_dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 
@@ -175,6 +166,6 @@ class TranslationDataModule(pl.LightningDataModule):
             self.test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )

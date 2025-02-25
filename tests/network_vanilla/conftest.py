@@ -39,8 +39,6 @@ def config():
 
 @pytest.fixture
 def sample_data(config):
-    data_dir = config['data_dir']
-
     # # remove data_dir and recreate it
     # shutil.rmtree(data_dir, ignore_errors=True)
     # os.makedirs(data_dir, exist_ok=True)
