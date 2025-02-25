@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import math
-from typing import Optional, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 try:
     from torch.nn.functional import scaled_dot_product_attention
@@ -28,7 +28,7 @@ class Linear(nn.Linear):
         )
 
 
-class FeedForward(nn.Module):
+class FeedForwardBlock(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float) -> None:
         super().__init__()
         self.model = nn.Sequential(
@@ -178,7 +178,7 @@ class ResidualAttentionBlock(nn.Module):
         # define MLP block
         n_mlp = d_model * 4
         dropout = 0.1
-        self.mlp = FeedForward(d_model, n_mlp, dropout)
+        self.mlp = FeedForwardBlock(d_model, n_mlp, dropout)
         self.mlp_ln = LayerNorm(d_model)
 
     def forward(
@@ -197,4 +197,30 @@ class ResidualAttentionBlock(nn.Module):
 
         # residual MLP block
         x = x + self.mlp(self.mlp_ln(x))
+        return x
+
+
+class Encoder(nn.Module):
+    def __init__(self, n_mels: int, n_ctx: int, n_state: int, n_head: int, n_layer: int):
+        super().__init__()
+
+        # setup positional embedding
+        self.positional_embedding = PositionalEncoding(n_state, n_ctx, 0.1)
+
+        # setup residual attention blocks
+        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(n_state, n_head) for _ in range(n_layer)])
+
+        # setup layer norm
+        self.ln_post = LayerNorm(n_state)
+
+    def forward(self, x: Tensor):
+        # apply positional embedding
+        x = (x + self.positional_embedding).to(x.dtype)
+
+        # apply residual attention blocks
+        for block in self.blocks:
+            x = block(x)
+
+        # apply layer norm
+        x = self.ln_post(x)
         return x
