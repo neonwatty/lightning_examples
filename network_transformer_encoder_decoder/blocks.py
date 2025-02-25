@@ -5,7 +5,8 @@ from torch import Tensor
 import math
 from typing import Dict, Iterable, Optional, Tuple
 import numpy as np
-from dataclasses import dataclass
+from network_transformer_encoder_decoder.config import ModelDimensions
+
 
 try:
     from torch.nn.functional import scaled_dot_product_attention
@@ -14,18 +15,6 @@ try:
 except (ImportError, RuntimeError, OSError):
     scaled_dot_product_attention = None
     SDPA_AVAILABLE = False
-
-
-@dataclass
-class ModelDimensions:
-    src_vocab_size: int
-    tgt_vocab_size: int
-    d_model: int
-    src_seq_len: int
-    tgt_seq_len: int
-    n_head: int
-    n_layers: int
-    dropout: float
 
 
 class LayerNorm(nn.LayerNorm):

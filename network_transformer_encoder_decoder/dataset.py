@@ -13,8 +13,6 @@ class HuggingFaceDataset(Dataset):
         self,
         dataset_name,
         subset_name,
-        source_tokenizer,
-        target_tokenizer,
         cache_dir="cache/",
         source_lang="source_text",
         target_lang="target_text",
@@ -24,8 +22,6 @@ class HuggingFaceDataset(Dataset):
         Args:
             dataset_name: The name of the Hugging Face dataset to use.
             subset_name: The name of the subset of the dataset to use.
-            source_tokenizer: Tokenizer for the source language.
-            target_tokenizer: Tokenizer for the target language.
             source_lang (str): The key for the source language text.
             target_lang (str): The key for the target language text.
             max_length (int): Maximum sequence length for tokenization.

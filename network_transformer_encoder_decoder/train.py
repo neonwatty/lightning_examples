@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Initialize network
     fully_connected_block = Transformer()
-    model = NN(fully_connected_block=fully_connected_block, num_classes=config.NUM_CLASSES)
+    model = NN(Transformer, config.MODEL_DIMS)
 
     # initialize data module
     dm = DataModule(

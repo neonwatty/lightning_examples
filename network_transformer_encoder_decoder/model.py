@@ -3,7 +3,7 @@ from torch import nn, optim
 import torchmetrics
 import pytorch_lightning as pl
 from network_transformer_encoder_decoder.blocks import Transformer
-from network_transformer_encoder_decoder.blocks import ModelDimensions
+from network_transformer_encoder_decoder.config import ModelDimensions
 
 
 class NN(pl.LightningModule):
