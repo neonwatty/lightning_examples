@@ -271,7 +271,6 @@ class Decoder(nn.Module):
 
         # project back to vocab (logits)
         logits = (x @ torch.transpose(self.token_embedding.weight.to(x.dtype), 0, 1)).float()
-
         return logits
 
 
