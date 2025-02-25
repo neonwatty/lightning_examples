@@ -3,6 +3,7 @@ scratch.ipynb
 **lightning_logs/
 **data/
 **/dataset/
+**/tokenizers/
 *.DS_Store
 .vscode
 

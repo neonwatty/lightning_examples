@@ -8,8 +8,10 @@ NUM_EPOCHS = 1
 # Dataset
 DATA_DIR = "dataset/"
 NUM_WORKERS = 0
-DATASET_NAME = "ylecun/mnist"
-PYTHON_TEST_DATASET_NAME = "neonwatty/mnist-sample-50"
+DATASET_NAME = "Helsinki-NLP/opus_books"
+DATASET_SUBSET = "en-es"
+PYTHON_TEST_DATASET_NAME = "neonwatty/opus_books-sample-50"
+PYTHON_TEST_SUBSET_NAME = "en-es"
 
 # Compute related
 ACCELERATOR = "mps"

@@ -8,3 +8,4 @@ tensorboard
 torch-tb-profiler
 torchmetrics
 pre-commit
+tokenizers
