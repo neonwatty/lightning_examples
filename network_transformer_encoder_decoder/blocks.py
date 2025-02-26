@@ -81,8 +81,11 @@ class PositionalEncoding(nn.Module):
         # Apply cosine to odd indices
         pe[:, 1::2] = torch.cos(position * div_term)  # cos(position * (10000 ** (2i / d_model))
 
+        # Convert to Tensor
+        pe = pe.unsqueeze(0)  # (1, seq_len, d_model)
+
         # Register the positional encoding as a buffer directly
-        self.register_buffer("pe", pe.unsqueeze(0))  # (1, seq_len, d_model)
+        self.register_buffer("pe", pe)  # (1, seq_len, d_model)
 
     def forward(self, x):
         x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)  # (batch, seq_len, d_model)
