@@ -28,7 +28,7 @@ class DataConfig:
 # Training hyperparameters
 LEARNING_RATE = 0.001
 BATCH_SIZE = 128
-NUM_EPOCHS = 1
+NUM_EPOCHS = 2
 CACHE_DIR = "cache/"
 
 # Create data configurations
@@ -57,7 +57,7 @@ DATA_CONFIG = DataConfig(
 MODEL_CONFIG_TEST = ModelDimensions(
     src_vocab_size=3200,
     tgt_vocab_size=3200,
-    d_model=768,
+    d_model=512,
     max_seq_len=512,
     n_head=8,
     n_layers=2,

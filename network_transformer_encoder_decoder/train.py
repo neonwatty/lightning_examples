@@ -5,7 +5,7 @@ from model import NN
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.profilers import PyTorchProfiler
 import network_transformer_encoder_decoder.config as config
-from network_vanilla.callbacks import callbacks
+from network_transformer_encoder_decoder.callbacks import callbacks
 from network_transformer_encoder_decoder.model import NN
 from network_transformer_encoder_decoder.blocks import Transformer
 from network_transformer_encoder_decoder.dataset import DataModule
@@ -29,10 +29,10 @@ if __name__ == "__main__":
     logger = TensorBoardLogger("tb_logs", name="transformer_ed_model_v1")
 
     # Initialize network
-    model = NN(Transformer, config.MODEL_CONFIG)
+    model = NN(Transformer, config.MODEL_CONFIG_TEST)
 
     # initialize data module
-    dm = DataModule(config.DATA_CONFIG)
+    dm = DataModule(config.DATA_CONFIG_TEST)
 
     # initialize trainer
     trainer = pl.Trainer(

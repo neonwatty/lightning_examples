@@ -1,5 +1,5 @@
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, Callback
-from network_vanilla.config import CACHE_DIR
+from network_transformer_encoder_decoder.config import CACHE_DIR
 
 class MyPrintingCallback(Callback):
     def __init__(self):
