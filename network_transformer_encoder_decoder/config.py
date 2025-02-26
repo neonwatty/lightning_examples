@@ -26,7 +26,7 @@ class DataConfig:
 
 
 # Training hyperparameters
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.00000000000000000001
 BATCH_SIZE = 128
 NUM_EPOCHS = 2
 CACHE_DIR = "cache/"

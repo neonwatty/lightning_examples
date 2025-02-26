@@ -3,6 +3,7 @@ from torch import nn, optim
 import torchmetrics
 import pytorch_lightning as pl
 from network_vanilla.blocks import FullyConnectedBlock
+from network_vanilla.config import LEARNING_RATE
 
 
 class NN(pl.LightningModule):
@@ -55,7 +56,7 @@ class NN(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=0.001)
+        return optim.Adam(self.parameters(), lr=LEARNING_RATE)
 
 
 def init_model(input_size, num_classes):

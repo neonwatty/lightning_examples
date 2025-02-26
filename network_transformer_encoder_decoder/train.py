@@ -32,7 +32,7 @@ if __name__ == "__main__":
     model = NN(Transformer, config.MODEL_CONFIG_TEST)
 
     # initialize data module
-    dm = DataModule(config.DATA_CONFIG_TEST)
+    dm = DataModule(config.DATA_CONFIG)
 
     # initialize trainer
     trainer = pl.Trainer(
