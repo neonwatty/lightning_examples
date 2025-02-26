@@ -1,3 +1,4 @@
+import torch
 from dataclasses import dataclass
 
 
@@ -26,7 +27,7 @@ class DataConfig:
 # Training hyperparameters
 LEARNING_RATE = 0.001
 BATCH_SIZE = 64
-NUM_EPOCHS = 1
+NUM_EPOCHS = 5
 
 # Create data configurations
 DATA_CONFIG_TEST = DataConfig(
@@ -72,6 +73,6 @@ MODEL_CONFIG = ModelDimensions(
 )
 
 # Compute related
-ACCELERATOR = "mps"
-DEVICES = 1
+ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
+DEVICES = 1 if ACCELERATOR == "gpu" else 0
 PRECISION = "16-mixed"

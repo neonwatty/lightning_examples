@@ -89,6 +89,7 @@ class HuggingFaceDataset(Dataset):
         tokenizer.save(self.target_tokenizer_path)  # Save the trained tokenizer
 
         print(f"Tokenizers trained and saved to {self.source_tokenizer_path} and {self.target_tokenizer_path}.")
+        return tokenizer
 
     def __len__(self):
         return len(self.dataset)

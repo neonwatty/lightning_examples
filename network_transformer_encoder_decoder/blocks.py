@@ -269,6 +269,6 @@ class Transformer(nn.Module):
         self.encoder = Encoder(dims.src_vocab_size, dims.d_model, dims.n_head, dims.n_layers)
         self.decoder = Decoder(dims.tgt_vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
 
-    def forward(self, x: Tensor, xa: Tensor):
+    def forward(self, x: Tensor, y: Tensor):
         x = self.encoder(x)
-        return self.decoder(xa, x)
+        return self.decoder(y, x)
