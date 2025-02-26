@@ -218,7 +218,7 @@ class Encoder(nn.Module):
 
     def forward(self, x: Tensor):
         # apply positional embedding
-        x = (x + self.positional_embedding).to(x.dtype)
+        x = (x + self.positional_embedding(x)).float()
 
         # apply residual attention blocks
         for block in self.blocks:
