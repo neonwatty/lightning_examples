@@ -60,11 +60,10 @@ class InputEmbeddings(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
+    def __init__(self, d_model: int, seq_len: int) -> None:
         super().__init__()
         self.d_model = d_model
         self.seq_len = seq_len
-        self.dropout = nn.Dropout(dropout)
 
         # Create a matrix of shape (seq_len, d_model)
         pe = torch.zeros(seq_len, d_model)
@@ -88,8 +87,8 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)  # (1, seq_len, d_model)
 
     def forward(self, x):
-        x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)  # (batch, seq_len, d_model)
-        return self.dropout(x)
+        # Return positional encoding for the given sequence length
+        return self.pe[:, : x.size(1)]
 
 
 class ResidualConnection(nn.Module):
@@ -112,15 +111,15 @@ class MultiHeadAttentionBlock(nn.Module):
         assert d_model % n_head == 0, "d_model is not divisible by h"
 
         self.d_k = d_model // n_head  # Dimension of vector seen by each head
-        self.w_q = Linear(d_model, d_model, bias=False)  # Wq
-        self.w_k = Linear(d_model, d_model, bias=False)  # Wk
-        self.w_v = Linear(d_model, d_model, bias=False)  # Wv
+        self.query = Linear(d_model, d_model, bias=False)  # Wq
+        self.key = Linear(d_model, d_model, bias=False)  # Wk
+        self.value = Linear(d_model, d_model, bias=False)  # Wv
         self.w_out = Linear(d_model, d_model, bias=False)  # Wo
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x: Tensor, xa: Optional[Tensor], mask: Optional[Tensor], kv_cache: Optional[dict] = None):
+    def forward(self, x: Tensor, xa: Optional[Tensor] = None, mask: Optional[Tensor] = None, kv_cache: Optional[dict] = None):
         # transform x to query
-        q = self.w_q(x)  # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
+        q = self.query(x)  # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
 
         # Determine the input to use for key and value projections
         input_tensor = x if xa is None else xa
@@ -206,9 +205,11 @@ class ResidualAttentionBlock(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, n_ctx: int, n_state: int, n_head: int, n_layer: int):
         super().__init__()
+        # input embeddings
+        self.token_embedding = InputEmbeddings(n_state, n_ctx)
 
         # setup positional embedding
-        self.positional_embedding = PositionalEncoding(n_state, n_ctx, 0.1)
+        self.positional_embedding = PositionalEncoding(n_state, n_ctx)
 
         # setup residual attention blocks
         self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(n_state, n_head) for _ in range(n_layer)])
@@ -217,8 +218,9 @@ class Encoder(nn.Module):
         self.ln_post = LayerNorm(n_state)
 
     def forward(self, x: Tensor):
-        # apply positional embedding
-        x = (x + self.positional_embedding(x)).float()
+        # apply token and positional embeddings
+        x = self.token_embedding(x)
+        x = x + self.positional_embedding(x)
 
         # apply residual attention blocks
         for block in self.blocks:
@@ -234,7 +236,7 @@ class Decoder(nn.Module):
         super().__init__()
         # setup token and positional embeddings
         self.token_embedding = InputEmbeddings(d_model, n_vocab)
-        self.positional_embedding = PositionalEncoding(d_model, seq_len, 0.1)
+        self.positional_embedding = PositionalEncoding(d_model, seq_len)
 
         # setup residual attention blocks
         self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList(
@@ -249,7 +251,8 @@ class Decoder(nn.Module):
     def forward(self, x: Tensor, xa: Tensor, kv_cache: Optional[dict] = None):
         # apply token and positional embeddings
         offset = next(iter(kv_cache.values())).shape[1] if kv_cache else 0
-        x = self.token_embedding(x) + self.positional_embedding[offset : offset + x.shape[-1]]
+        x = self.token_embedding(x)
+        x += self.positional_embedding(x)[offset : offset + x.shape[-1]]
         x = x.to(xa.dtype)
 
         # apply residual attention blocks
@@ -258,7 +261,7 @@ class Decoder(nn.Module):
         x = self.ln(x)
 
         # project back to vocab (logits)
-        logits = (x @ torch.transpose(self.token_embedding.weight.to(x.dtype), 0, 1)).float()
+        logits = (x @ torch.transpose(self.token_embedding.embedding.weight.to(x.dtype), 0, 1)).float()
         return logits
 
 
@@ -271,4 +274,4 @@ class Transformer(nn.Module):
 
     def forward(self, x: Tensor, xa: Tensor):
         x = self.encoder(x)
-        return self.decoder(x, xa)
+        return self.decoder(xa, x)

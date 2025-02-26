@@ -41,12 +41,12 @@ DATA_CONFIG = DataConfig(
 
 # setup model configuration
 MODEL_CONFIG = ModelDimensions(
-    src_vocab_size=32000,
-    tgt_vocab_size=32000,
+    src_vocab_size=3200,
+    tgt_vocab_size=3200,
     d_model=1024,
     max_seq_len=512,
     n_head=8,
-    n_layers=6,
+    n_layers=2,
     dropout=0.1,
 )
 
