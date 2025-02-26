@@ -62,9 +62,6 @@ class InputEmbeddings(nn.Module):
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, seq_len: int) -> None:
         super().__init__()
-        self.d_model = d_model
-        self.seq_len = seq_len
-
         # Create a matrix of shape (seq_len, d_model)
         pe = torch.zeros(seq_len, d_model)
 
