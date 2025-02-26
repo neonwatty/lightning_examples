@@ -14,8 +14,8 @@ class NN(pl.LightningModule):
         self.loss_fn = nn.CrossEntropyLoss()
 
         # accuracy options
-        self.accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=dims.tgt_vocab_size)
-        self.f1_score = torchmetrics.F1Score(task="multiclass", num_classes=dims.tgt_vocab_size)
+        self.accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=dims.vocab_size)
+        self.f1_score = torchmetrics.F1Score(task="multiclass", num_classes=dims.vocab_size)
 
     def forward(self, x, y):
         x = self.model(x, y)

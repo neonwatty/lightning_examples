@@ -8,19 +8,13 @@ from tokenizers import trainers, Tokenizer
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.models import BPE
 from torch.utils.data import DataLoader, random_split
-from network_transformer_encoder_decoder.config import DataConfig, CACHE_DIR, MODEL_DIR
+from network_transformer_encoder_decoder.config import DataConfig, BATCH_SIZE
 
 
 class HuggingFaceDataset(Dataset):
     def __init__(
         self,
-        dataset_name,
-        subset_name,
-        cache_dir="cache/",
-        model_dir="model",
-        source_lang="source_text",
-        target_lang="target_text",
-        max_length=512,
+        dataset_config: DataConfig,
     ):
         """
         Args:
@@ -30,24 +24,22 @@ class HuggingFaceDataset(Dataset):
             target_lang (str): The key for the target language text.
             max_length (int): Maximum sequence length for tokenization.
         """
-        # Create cache directories if they don't exist
-        os.makedirs(cache_dir + model_dir +  "tokenizers/", exist_ok=True)
-        os.makedirs(cache_dir + "dataset/", exist_ok=True)
-
         # load in the dataset
-        self.dataset = datasets.load_dataset(dataset_name, subset_name, split="train", cache_dir=cache_dir + "dataset/")
+        self.dataset_config = dataset_config
+        self.source_lang = self.dataset_config.source_lang
+        self.target_lang = self.dataset_config.target_lang
+        self.max_length = self.dataset_config.max_seq_len
+        self.vocab_size = self.dataset_config.vocab_size
+        self.dataset = datasets.load_dataset(dataset_config.dataset_name, dataset_config.dataset_subset, split="train", cache_dir=dataset_config.dataset_dir)
 
-        self.source_lang = source_lang
-        self.target_lang = target_lang
-        self.max_length = max_length
 
         # Tokenizer paths
-        self.source_tokenizer_path = cache_dir + model_dir + "tokenizers/" + "source_tokenizer_{}.json".format(source_lang)
-        self.target_tokenizer_path = cache_dir + model_dir + "tokenizers/" + "target_tokenizer_{}.json".format(target_lang)
+        self.source_tokenizer_path = dataset_config.source_tokenizer_path
+        self.target_tokenizer_path = dataset_config.target_tokenizer_path
 
         # Load tokenizers from disk if available, otherwise train them
-        self.source_tokenizer = self.load_or_train_tokenizer(cache_dir + model_dir + "tokenizers/" + "source_tokenizer_{}.json".format(source_lang), source_lang)
-        self.target_tokenizer = self.load_or_train_tokenizer(cache_dir + model_dir + "tokenizers/" + "target_tokenizer_{}.json".format(target_lang), target_lang)
+        self.source_tokenizer = self.load_or_train_tokenizer(self.source_tokenizer_path, self.source_lang)
+        self.target_tokenizer = self.load_or_train_tokenizer(self.target_tokenizer_path, self.target_lang)
 
     def load_or_train_tokenizer(self, tokenizer_path, lang_key):
         """
@@ -75,7 +67,7 @@ class HuggingFaceDataset(Dataset):
         # Train the source tokenizer
         tokenizer = Tokenizer(BPE())
         tokenizer.pre_tokenizer = Whitespace()
-        source_trainer = trainers.BpeTrainer(vocab_size=3200, special_tokens=["[PAD]", "[BOS]", "[EOS]"])
+        source_trainer = trainers.BpeTrainer(vocab_size=self.vocab_size, special_tokens=["[PAD]", "[BOS]", "[EOS]"])
         tokenizer.train_from_iterator(source_texts, trainer=source_trainer)
         tokenizer.save(self.source_tokenizer_path)  # Save the trained tokenizer
 
@@ -83,7 +75,7 @@ class HuggingFaceDataset(Dataset):
         tokenizer = Tokenizer(BPE())
         tokenizer.pre_tokenizer = Whitespace()
         target_trainer = trainers.BpeTrainer(
-            vocab_size=3200,
+            vocab_size=self.vocab_size,
             special_tokens=["[PAD]", "[BOS]"],  # no eos for target
         )
         tokenizer.train_from_iterator(target_texts, trainer=target_trainer)
@@ -134,7 +126,7 @@ class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         dataset_config: DataConfig,
-        batch_size=64,
+        batch_size=BATCH_SIZE,
         val_split=0.1,
         test_split=0.1,
     ):
@@ -159,7 +151,7 @@ class DataModule(pl.LightningDataModule):
 
         # Initialize HuggingFaceDataset for training, validation, and testing
         self.train_dataset = HuggingFaceDataset(
-            dataset_name, subset_name, source_lang=source_lang, target_lang=target_lang, max_length=max_seq_len, cache_dir=CACHE_DIR, model_dir=MODEL_DIR
+           dataset_config
         )
 
         # Split dataset into training, validation, and test sets
