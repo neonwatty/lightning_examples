@@ -8,9 +8,9 @@ from network_transformer_encoder_decoder.config import LEARNING_RATE
 
 
 class NN(pl.LightningModule):
-    def __init__(self, model: Transformer, dims: ModelDimensions):
+    def __init__(self, dims: ModelDimensions):
         super().__init__()
-        self.model = model(dims)
+        self.model = Transformer(dims)
         self.loss_fn = nn.CrossEntropyLoss()
 
         # accuracy options
@@ -25,7 +25,7 @@ class NN(pl.LightningModule):
         loss, scores, y = self._common_step(batch, batch_idx)
         accuracy = self.accuracy(scores, y)
         f1_score = self.f1_score(scores, y)
-        self.log_dict({"train_loss": loss, "train_accuracy": accuracy, "train_f1_score": f1_score}, on_step=False, on_epoch=True, prog_bar=True)
+        self.log_dict({"train_loss": loss, "train_accuracy": accuracy, "train_f1_score": f1_score}, on_step=True, on_epoch=True, prog_bar=True)
         return {"loss": loss, "scores": scores, "y": y, "train_accuracy": accuracy}
 
     # def on_train_epoch_end(self, outputs):

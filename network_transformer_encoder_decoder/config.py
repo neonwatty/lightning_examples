@@ -1,6 +1,7 @@
 import os
 import torch
 from dataclasses import dataclass
+import time
 
 
 @dataclass
@@ -16,7 +17,6 @@ class ModelDimensions:
 
 @dataclass
 class DataConfig:
-    cache_dir: str
     num_workers: int
     dataset_name: str
     dataset_subset: str
@@ -26,30 +26,34 @@ class DataConfig:
 
 
 # Training hyperparameters
-LEARNING_RATE = 0.00000000000000000001
+LEARNING_RATE = 0.001
 BATCH_SIZE = 128
 NUM_EPOCHS = 2
+# add current time in unix timestamp to cache directory
 CACHE_DIR = "cache/"
+MODEL_DIR = "run-" + str(int(time.time())) + "/"
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR + MODEL_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR + MODEL_DIR + '/checkpoints', exist_ok=True)
+os.makedirs(CACHE_DIR + MODEL_DIR + '/tokenizers', exist_ok=True)
 
 # Create data configurations
 DATA_CONFIG_TEST = DataConfig(
-    cache_dir=CACHE_DIR,
     num_workers=os.cpu_count(),
     dataset_name="neonwatty/opus_books-sample-50",
     dataset_subset="en-es",
     source_lang="en",
     target_lang="es",
-    max_seq_len=512,
+    max_seq_len=128,
 )
 
 DATA_CONFIG = DataConfig(
-    cache_dir=CACHE_DIR,
     num_workers=os.cpu_count(),
     dataset_name="Helsinki-NLP/opus_books",
     dataset_subset="en-es",
     source_lang="en",
     target_lang="es",
-    max_seq_len=512,
+    max_seq_len=128,
 )
 
 
@@ -57,10 +61,10 @@ DATA_CONFIG = DataConfig(
 MODEL_CONFIG_TEST = ModelDimensions(
     src_vocab_size=3200,
     tgt_vocab_size=3200,
-    d_model=512,
-    max_seq_len=512,
+    d_model=32,
+    max_seq_len=128,
     n_head=8,
-    n_layers=2,
+    n_layers=1,
     dropout=0.1,
 )
 
