@@ -50,6 +50,12 @@ class NN(pl.LightningModule):
 
         # print shape of x and y
         scores = self.forward(x, y)
+
+        # reshape scores for loss calculation
+        scores = scores.view(-1, scores.size(-1))
+        y = y.view(-1)
+
+        # calculate loss
         loss = self.loss_fn(scores, y)
         return loss, scores, y
 
