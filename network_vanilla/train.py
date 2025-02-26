@@ -4,7 +4,7 @@ from model import NN
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.profilers import PyTorchProfiler
 
-from network_vanilla.callbacks import MyPrintingCallback, EarlyStopping
+from network_vanilla.callbacks import callbacks
 import network_vanilla.config as config
 from network_vanilla.blocks import FullyConnectedBlock
 from network_vanilla.dataset import DataModule
@@ -31,19 +31,19 @@ if __name__ == "__main__":
     dm = DataModule(
         dataset_name=config.DATASET_NAME,
         batch_size=config.BATCH_SIZE,
-        cache_dir=config.DATA_DIR,
+        cache_dir=config.CACHE_DIR,
         num_workers=config.NUM_WORKERS,
     )
 
     # initialize trainer
     trainer = pl.Trainer(
-        profiler=profiler,
+        # profiler=profiler,
         accelerator=config.ACCELERATOR,
-        # devices=config.DEVICES, # only use for gpu
+        devices=config.DEVICES,
         min_epochs=1,
         max_epochs=config.NUM_EPOCHS,
         precision=config.PRECISION,
-        callbacks=[MyPrintingCallback(), EarlyStopping(monitor="val_loss")],
+        callbacks=callbacks,
     )
     trainer.fit(model, dm)
     trainer.validate(model, dm)

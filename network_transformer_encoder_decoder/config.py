@@ -1,3 +1,4 @@
+import os
 import torch
 from dataclasses import dataclass
 
@@ -26,13 +27,14 @@ class DataConfig:
 
 # Training hyperparameters
 LEARNING_RATE = 0.001
-BATCH_SIZE = 64
-NUM_EPOCHS = 5
+BATCH_SIZE = 128
+NUM_EPOCHS = 1
+CACHE_DIR = "cache/"
 
 # Create data configurations
 DATA_CONFIG_TEST = DataConfig(
-    cache_dir="cache/",
-    num_workers=0,
+    cache_dir=CACHE_DIR,
+    num_workers=os.cpu_count(),
     dataset_name="neonwatty/opus_books-sample-50",
     dataset_subset="en-es",
     source_lang="en",
@@ -41,8 +43,8 @@ DATA_CONFIG_TEST = DataConfig(
 )
 
 DATA_CONFIG = DataConfig(
-    cache_dir="cache/",
-    num_workers=0,
+    cache_dir=CACHE_DIR,
+    num_workers=os.cpu_count(),
     dataset_name="Helsinki-NLP/opus_books",
     dataset_subset="en-es",
     source_lang="en",
@@ -63,16 +65,16 @@ MODEL_CONFIG_TEST = ModelDimensions(
 )
 
 MODEL_CONFIG = ModelDimensions(
-    src_vocab_size=32000,
-    tgt_vocab_size=32000,
-    d_model=1024,
+    src_vocab_size=3200,
+    tgt_vocab_size=3200,
+    d_model=768,
     max_seq_len=512,
     n_head=8,
-    n_layers=6,
+    n_layers=2,
     dropout=0.1,
 )
 
 # Compute related
 ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
-DEVICES = 1 if ACCELERATOR == "gpu" else 0
+DEVICES = [0] if ACCELERATOR == "gpu" else 0
 PRECISION = "16-mixed"

@@ -48,7 +48,7 @@ class DataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         # Downloads the dataset (only needed once), specifying cache directory
-        datasets.load_dataset(self.dataset_name, cache_dir=self.cache_dir)
+        datasets.load_dataset(self.dataset_name, cache_dir=self.cache_dir + "/dataset")
 
     def setup(self, stage=None):
         # Load the dataset from cache
