@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Dict, Iterable, Optional, Tuple
 import numpy as np
-from network_transformer_encoder_decoder.config import ModelDimensions
+from network_transformer_encoder_decoder.config import ModelConfig
 
 
 try:
@@ -261,7 +261,7 @@ class Decoder(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, dims: ModelDimensions):
+    def __init__(self, dims: ModelConfig):
         super().__init__()
         self.dims = dims
         self.encoder = Encoder(dims.vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)

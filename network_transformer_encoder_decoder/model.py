@@ -2,13 +2,13 @@ import torch
 from torch import nn, optim
 import torchmetrics
 import pytorch_lightning as pl
-from network_transformer_encoder_decoder.blocks import Transformer
-from network_transformer_encoder_decoder.config import ModelDimensions
+from network_transformer_encoder_decoder.blocks_condensed import Transformer
+from network_transformer_encoder_decoder.config import ModelConfig
 from network_transformer_encoder_decoder.config import LEARNING_RATE
 
 
 class NN(pl.LightningModule):
-    def __init__(self, dims: ModelDimensions):
+    def __init__(self, dims: ModelConfig):
         super().__init__()
         self.model = Transformer(dims)
         self.loss_fn = nn.CrossEntropyLoss()
@@ -71,6 +71,6 @@ class NN(pl.LightningModule):
         return optim.Adam(self.parameters(), lr=LEARNING_RATE)
 
 
-def init_model(ModelDimensions):
-    block = Transformer(dims=ModelDimensions)
-    return NN(block, ModelDimensions)
+def init_model(ModelConfig):
+    block = Transformer(dims=ModelConfig)
+    return NN(block, ModelConfig)

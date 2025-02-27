@@ -7,7 +7,7 @@ from network_transformer_encoder_decoder.callbacks import MyPrintingCallback, Ea
 
 
 @dataclass
-class ModelDimensions:
+class ModelConfig:
     vocab_size: int
     d_model: int
     max_seq_len: int
@@ -106,7 +106,7 @@ def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512,
         target_tokenizer_path=TGT_TOKENIZER_PATH,
     )
 
-    MODEL_CONFIG = ModelDimensions(
+    MODEL_CONFIG = ModelConfig(
         vocab_size=vocab_size,
         d_model=d_model,
         max_seq_len=max_seq_len,

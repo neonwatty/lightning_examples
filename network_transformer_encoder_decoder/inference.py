@@ -3,12 +3,13 @@ import pytorch_lightning as pl
 import torch
 from network_transformer_encoder_decoder.model import NN
 from network_transformer_encoder_decoder.blocks_condensed import Transformer
-from network_transformer_encoder_decoder.config import DataConfig, ModelDimensions
+from network_transformer_encoder_decoder.config import DataConfig, ModelConfig
+from network_transformer_encoder_decoder.dataset import DataModule
 import json
 from tokenizers import Tokenizer
 
 
-def load(run_dir):
+def load_model(run_dir):
     # Define the path to the checkpoint and configs and tokenizers
     total_run_dir = "./cache" + "/" + run_dir + "/"
     checkpoint_dir = total_run_dir + "checkpoints/"
@@ -28,8 +29,8 @@ def load(run_dir):
     with open(config_dir + "model_config.json", "r") as f:
         model_config = json.load(f)
 
-    # convert model_config to ModelDimensions
-    model_dimensions = ModelDimensions(**model_config)
+    # convert model_config to ModelConfig
+    model_config = ModelConfig(**model_config)
 
     # load in config_dir + data_config.json
     with open(config_dir + "data_config.json", "r") as f:
@@ -39,10 +40,10 @@ def load(run_dir):
     data_config = DataConfig(**data_config)
 
     # Create your model instance
-    model = NN(model_dimensions)
+    model = NN(model_config)
 
     # Create transformer instance
-    transformer = Transformer(model_dimensions)
+    transformer = Transformer(model_config)
 
     # Load the checkpoint
     checkpoint = torch.load(last_checkpoint)
@@ -53,14 +54,10 @@ def load(run_dir):
     # Set the model to evaluation mode
     model.eval();
 
-    return src_tokenizer, tgt_tokenizer, model, transformer
+    return data_config, model_config, src_tokenizer, tgt_tokenizer, model, transformer
 
 
-import torch
-
-def test(test_input, src_tokenizer, tgt_tokenizer, model):
-    max_seq_len = 64  # Keep it fixed
-
+def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
     # Tokenize source input
     source_tokens = src_tokenizer.encode("[BOS] " + test_input + " [EOS]").ids
     source_tokens = source_tokens[:max_seq_len]  # Truncate if needed
@@ -69,31 +66,66 @@ def test(test_input, src_tokenizer, tgt_tokenizer, model):
     # Pad source tokens if necessary
     if source_padding > 0:
         source_tokens += [src_tokenizer.token_to_id("[PAD]")] * source_padding
+    
+    # Convert to tensor
+    source_tokens = torch.tensor(source_tokens, dtype=torch.long).unsqueeze(0)
 
-    # Convert source tokens to tensor and move to device
-    source_tensor = torch.tensor(source_tokens, dtype=torch.long).unsqueeze(0)
+    # precompute the encoder output and re-use for all the decoding steps
+    encoder_output = model.encoder(source_tokens)
 
     # Initialize target sequence with BOS token
-    target_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
-    target_tensor = torch.tensor(target_tokens, dtype=torch.long).unsqueeze(0)
+    decoder_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
+    decoder_output = torch.empty(1, 1, dtype=torch.long).fill_(decoder_tokens[0]).type_as(source_tokens)
 
     # Perform inference (greedy decoding)
-    model.eval()
     with torch.no_grad():
-        for _ in range(max_seq_len):  # Generate up to max_seq_len tokens
-            output = model(source_tensor, target_tensor)
+        while True:
+            print(f'deocder_output shape: {decoder_output.shape}')
+            print(f'encoder_output shape: {encoder_output.shape}')
+
+            # stopping condition
+            if decoder_output.size(1) > max_seq_len:
+                break
+            
+            # decoder_output: (batch, seq_len)
+            output = model.decoder(decoder_output, encoder_output)
             predicted_token = torch.argmax(output[:, -1, :], dim=-1).item()
 
             # Append the predicted token
-            target_tokens.append(predicted_token)
+            decoder_tokens.append(predicted_token)
 
             # If EOS is generated, stop early
             if predicted_token == tgt_tokenizer.token_to_id("[EOS]"):
                 break
 
             # Update target tensor
-            target_tensor = torch.tensor(target_tokens, dtype=torch.long).unsqueeze(0)
-            print(target_tensor)
+            decoder_tokens = torch.tensor(decoder_tokens, dtype=torch.long).unsqueeze(0)
+
     # Decode and return generated text
-    return tgt_tokenizer.decode(target_tokens)
+    return tgt_tokenizer.decode(decoder_token)
+
+
+def test(data_config, Modemodel_configlConfig, src_tokenizer, tgt_tokenizer, model):
+    # Set the maximum sequence length
+    max_seq_len = data_config.max_seq_len
+
+    # # instantiate data module
+    # dm = DataModule(data_config)
+
+    # # get validation dataset
+    # val_dataset = dm.val_dataloader()
+
+    # # sample a single example from the validation dataset
+    # test_input = val_dataset[0]["source_text"]
+    # print(f'Input: {test_input}')
+    test_input = "I am a test input"
+
+    # Perform greedy decoding
+    decoded_output = greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len)
+
+    # Print the decoded output
+    print(f"Input: {test_input}")
+    print(f"Output: {decoded_output}")
+    print()
+
 

@@ -156,6 +156,7 @@ class DataModule(pl.LightningDataModule):
 
         # Split dataset into training, validation, and test sets
         total_len = len(self.train_dataset)
+        print('full dataset length:', total_len)
         val_len = int(total_len * val_split)
         test_len = int(total_len * test_split)
         train_len = total_len - val_len - test_len
@@ -188,3 +189,4 @@ class DataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
         )
+

@@ -5,8 +5,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Dict, Iterable, Optional, Tuple
 import numpy as np
-from network_transformer_encoder_decoder.config import ModelDimensions
-from huggingface_hub import PyTorchModelHubMixin
+from network_transformer_encoder_decoder.config import ModelConfig
 
 
 class InputEmbeddings(nn.Module):
@@ -91,8 +90,8 @@ class Decoder(nn.Module):
         return logits
 
 
-class Transformer(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, dims: ModelDimensions):
+class Transformer(nn.Module):
+    def __init__(self, dims: ModelConfig):
         super().__init__()
         self.dims = dims
         self.encoder = Encoder(dims.vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
@@ -100,4 +99,5 @@ class Transformer(nn.Module, PyTorchModelHubMixin):
 
     def forward(self, x: Tensor, y: Tensor):
         x = self.encoder(x)
-        return self.decoder(y, x)
+        x = self.decoder(y, x)
+        return x
