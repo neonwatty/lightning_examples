@@ -200,19 +200,17 @@ class ResidualAttentionBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, n_ctx: int, n_state: int, n_head: int, n_layer: int):
+    def __init__(self, vocab_size: int, seq_len: int, d_model: int, n_head: int, n_layer: int):
         super().__init__()
-        # input embeddings
-        self.token_embedding = InputEmbeddings(n_state, n_ctx)
-
-        # setup positional embedding
-        self.positional_embedding = PositionalEncoding(n_state, n_ctx)
+        # setup token and positional embeddings
+        self.token_embedding = InputEmbeddings(d_model, vocab_size)
+        self.positional_embedding = PositionalEncoding(d_model, seq_len)
 
         # setup residual attention blocks
-        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(n_state, n_head) for _ in range(n_layer)])
+        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(d_model, n_head) for _ in range(n_layer)])
 
         # setup layer norm
-        self.ln_post = LayerNorm(n_state)
+        self.ln_post = LayerNorm(d_model)
 
     def forward(self, x: Tensor):
         # apply token and positional embeddings
@@ -229,10 +227,10 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, n_vocab: int, seq_len: int, d_model: int, n_head: int, n_layer: int):
+    def __init__(self, vocab_size: int, seq_len: int, d_model: int, n_head: int, n_layer: int):
         super().__init__()
         # setup token and positional embeddings
-        self.token_embedding = InputEmbeddings(d_model, n_vocab)
+        self.token_embedding = InputEmbeddings(d_model, vocab_size)
         self.positional_embedding = PositionalEncoding(d_model, seq_len)
 
         # setup residual attention blocks
@@ -266,7 +264,7 @@ class Transformer(nn.Module):
     def __init__(self, dims: ModelDimensions):
         super().__init__()
         self.dims = dims
-        self.encoder = Encoder(dims.vocab_size, dims.d_model, dims.n_head, dims.n_layers)
+        self.encoder = Encoder(dims.vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
         self.decoder = Decoder(dims.vocab_size, dims.max_seq_len, dims.d_model, dims.n_head, dims.n_layers)
 
     def forward(self, x: Tensor, y: Tensor):
