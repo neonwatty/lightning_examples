@@ -2,17 +2,18 @@ import os
 import pytorch_lightning as pl
 import torch
 from network_transformer_encoder_decoder.model import NN
+from network_transformer_encoder_decoder.blocks_condensed import Transformer
 from network_transformer_encoder_decoder.config import DataConfig, ModelDimensions
 import json
 from tokenizers import Tokenizer
 
 
-def load():
+def load(run_dir):
     # Define the path to the checkpoint and configs and tokenizers
-    run_dir = "./cache/run-1740610340/"
-    checkpoint_dir = run_dir + "checkpoints/"
-    tokenizer_dir = run_dir + "tokenizers/"
-    config_dir = run_dir + "configs/"
+    total_run_dir = "./cache" + "/" + run_dir + "/"
+    checkpoint_dir = total_run_dir + "checkpoints/"
+    tokenizer_dir = total_run_dir + "tokenizers/"
+    config_dir = total_run_dir + "configs/"
 
     # load tokenizer
     src_tokenizer = Tokenizer.from_file(tokenizer_dir + "src_tokenizer.json")
@@ -40,6 +41,9 @@ def load():
     # Create your model instance
     model = NN(model_dimensions)
 
+    # Create transformer instance
+    transformer = Transformer(model_dimensions)
+
     # Load the checkpoint
     checkpoint = torch.load(last_checkpoint)
 
@@ -49,41 +53,47 @@ def load():
     # Set the model to evaluation mode
     model.eval();
 
-    return src_tokenizer, tgt_tokenizer, model
+    return src_tokenizer, tgt_tokenizer, model, transformer
 
 
-def test():
-    src_tokenizer, tgt_tokenizer, model = load()
-    max_seq_len = 64
-    test_input = "hi there"
-    source_text = "[BOS]" + " " + test_input + " " + "[EOS]"
-    source_tokens = src_tokenizer.encode(test_input).ids
+import torch
+
+def test(test_input, src_tokenizer, tgt_tokenizer, model):
+    max_seq_len = 64  # Keep it fixed
+
+    # Tokenize source input
+    source_tokens = src_tokenizer.encode("[BOS] " + test_input + " [EOS]").ids
+    source_tokens = source_tokens[:max_seq_len]  # Truncate if needed
     source_padding = max_seq_len - len(source_tokens)
-    source_tokens = source_tokens[: max_seq_len]
+
+    # Pad source tokens if necessary
     if source_padding > 0:
         source_tokens += [src_tokenizer.token_to_id("[PAD]")] * source_padding
 
-    test_output = "[BOS]"
-    target_tokens = tgt_tokenizer.encode(test_output).ids
+    # Convert source tokens to tensor and move to device
+    source_tensor = torch.tensor(source_tokens, dtype=torch.long).unsqueeze(0)
 
-    # Perform inference (translate)
+    # Initialize target sequence with BOS token
+    target_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
+    target_tensor = torch.tensor(target_tokens, dtype=torch.long).unsqueeze(0)
+
+    # Perform inference (greedy decoding)
+    model.eval()
     with torch.no_grad():
-        for i in range(10):
-            print(i)
-            # Pass input through the model
-            output = model(torch.tensor(source_tokens).unsqueeze(0), torch.tensor(target_tokens).unsqueeze(0))
+        for _ in range(max_seq_len):  # Generate up to max_seq_len tokens
+            output = model(source_tensor, target_tensor)
+            predicted_token = torch.argmax(output[:, -1, :], dim=-1).item()
 
-            # Get the last token prediction (top of the sequence)
-            predicted_token = torch.argmax(output[:, -1, :], dim=-1)
-            print(predicted_token)
+            # Append the predicted token
+            target_tokens.append(predicted_token)
 
-            # Append the predicted token to the target input for the next step
-            target_tokens.append(predicted_token.item())
-            print(target_tokens)
-
-            # If the model generates the EOS token, break early
-            if predicted_token.item() == tgt_tokenizer.token_to_id("[EOS]"):
+            # If EOS is generated, stop early
+            if predicted_token == tgt_tokenizer.token_to_id("[EOS]"):
                 break
 
-    # Decode the output token ids to text
-    output_text = tgt_tokenizer.decode(target_tokens)
+            # Update target tensor
+            target_tensor = torch.tensor(target_tokens, dtype=torch.long).unsqueeze(0)
+            print(target_tensor)
+    # Decode and return generated text
+    return tgt_tokenizer.decode(target_tokens)
+
