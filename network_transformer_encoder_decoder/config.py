@@ -33,7 +33,7 @@ class DataConfig:
 # Training hyperparameters
 LEARNING_RATE = 0.001
 BATCH_SIZE = 128
-NUM_EPOCHS = 2
+NUM_EPOCHS = 1
 
 # Compute related
 ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"

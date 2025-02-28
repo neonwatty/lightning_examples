@@ -2,7 +2,7 @@ import os
 import pytorch_lightning as pl
 import torch
 from network_transformer_encoder_decoder.model import NN
-from network_transformer_encoder_decoder.blocks_condensed import Transformer
+from network_transformer_encoder_decoder.blocks import Transformer
 from network_transformer_encoder_decoder.config import DataConfig, ModelConfig
 from network_transformer_encoder_decoder.dataset import DataModule
 import json
@@ -59,7 +59,7 @@ def load_model(run_dir):
 
 def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
     # Tokenize source input
-    source_tokens = src_tokenizer.encode("[BOS] " + test_input + " [EOS]").ids
+    source_tokens = src_tokenizer.encode("[BOS]" + test_input + "[EOS]").ids
     source_tokens = source_tokens[:max_seq_len]  # Truncate if needed
     source_padding = max_seq_len - len(source_tokens)
 
@@ -72,23 +72,25 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
 
     # precompute the encoder output and re-use for all the decoding steps
     encoder_output = model.encoder(source_tokens)
+    print(source_tokens)
+    print(encoder_output)
 
     # Initialize target sequence with BOS token
     decoder_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
+    # decoder_tokens = [tgt_tokenizer.token_to_id("El")]
     decoder_output = torch.empty(1, 1, dtype=torch.long).fill_(decoder_tokens[0]).type_as(source_tokens)
 
     # Perform inference (greedy decoding)
     with torch.no_grad():
         while True:
-            print(f'deocder_output shape: {decoder_output.shape}')
-            print(f'encoder_output shape: {encoder_output.shape}')
-
             # stopping condition
-            if decoder_output.size(1) > max_seq_len:
+            if decoder_output.size(1) >= max_seq_len:
                 break
             
             # decoder_output: (batch, seq_len)
+            print(decoder_output)
             output = model.decoder(decoder_output, encoder_output)
+            print(f'shape of output: {output.shape}')
             predicted_token = torch.argmax(output[:, -1, :], dim=-1).item()
 
             # Append the predicted token
@@ -99,10 +101,10 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
                 break
 
             # Update target tensor
-            decoder_tokens = torch.tensor(decoder_tokens, dtype=torch.long).unsqueeze(0)
+            decoder_output = torch.tensor(decoder_tokens, dtype=torch.long).unsqueeze(0)
 
     # Decode and return generated text
-    return tgt_tokenizer.decode(decoder_token)
+    return tgt_tokenizer.decode(decoder_tokens)
 
 
 def test(data_config, Modemodel_configlConfig, src_tokenizer, tgt_tokenizer, model):
@@ -118,7 +120,7 @@ def test(data_config, Modemodel_configlConfig, src_tokenizer, tgt_tokenizer, mod
     # # sample a single example from the validation dataset
     # test_input = val_dataset[0]["source_text"]
     # print(f'Input: {test_input}')
-    test_input = "I am a test input"
+    test_input = "The late owner of this estate was a single man, who lived to a very advanced age, and who for many years of his life, had a constant companion and housekeeper in his sister."
 
     # Perform greedy decoding
     decoded_output = greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len)

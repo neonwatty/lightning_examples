@@ -7,7 +7,7 @@ from network_transformer_encoder_decoder.dataset import DataModule
 if __name__ == "__main__":
     # generate configs
     data_config, model_config, callbacks = generate(
-        dataset_name="Helsinki-NLP/opus_books", vocab_size=320, max_seq_len=64, batch_size=128, d_model=32, n_head=2, n_layers = 2
+        dataset_name="Helsinki-NLP/opus_books", vocab_size=320, max_seq_len=512, batch_size=128, d_model=32, n_head=2, n_layers = 2
     )
 
     # Create a model

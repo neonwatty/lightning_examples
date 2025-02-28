@@ -76,7 +76,7 @@ class HuggingFaceDataset(Dataset):
         tokenizer.pre_tokenizer = Whitespace()
         target_trainer = trainers.BpeTrainer(
             vocab_size=self.vocab_size,
-            special_tokens=["[PAD]", "[BOS]"],  # no eos for target
+            special_tokens=["[PAD]", "[BOS]", "[EOS]"],
         )
         tokenizer.train_from_iterator(target_texts, trainer=target_trainer)
         tokenizer.save(self.target_tokenizer_path)  # Save the trained tokenizer
@@ -91,35 +91,53 @@ class HuggingFaceDataset(Dataset):
         item = self.dataset[idx]
 
         # Format text with special tokens
-        source_text = "[BOS]" + " " + item["translation"][self.source_lang] + " " + "[EOS]"
-        target_text = "[BOS]" + " " + item["translation"][self.target_lang]
+        source_text = item["translation"][self.source_lang]
+        target_text = item["translation"][self.target_lang]
+        label_text = item["translation"][self.target_lang]
 
         # Tokenize source text
         source_tokens = self.source_tokenizer.encode(source_text)
         target_tokens = self.target_tokenizer.encode(target_text)
+        label_tokens = self.target_tokenizer.encode(label_text)
 
         # Convert to ids
         source_tokens = source_tokens.ids
         target_tokens = target_tokens.ids
+        label_tokens = label_tokens.ids
+
+        if len(source_tokens) > self.max_length - 2:
+            source_tokens = source_tokens[: self.max_length - 2]
+        if len(target_tokens) > self.max_length - 1:
+            target_tokens = target_tokens[: self.max_length - 1]
+        if len(label_tokens) > self.max_length - 1:
+            label_tokens = label_tokens[: self.max_length - 1]
 
         # Compute necessary padding
-        source_padding = self.max_length - len(source_tokens)
-        target_padding = self.max_length - len(target_tokens)
+        source_padding = self.max_length - len(source_tokens) - 2 # account for [BOS] and [EOS]
+        target_padding = self.max_length - len(target_tokens) - 1 # account for [BOS]
+        label_padding = self.max_length - len(label_tokens) - 1 # account for [EOS]
 
-        # Ensure token lengths are within the maximum length
-        source_tokens = source_tokens[: self.max_length]
-        target_tokens = target_tokens[: self.max_length]
+        source_tokens = torch.concat([
+            torch.tensor([self.source_tokenizer.token_to_id("[BOS]")]),
+            torch.tensor(source_tokens),
+            torch.tensor([self.source_tokenizer.token_to_id("[EOS]")]),
+            torch.tensor([self.source_tokenizer.token_to_id("[PAD]")]*source_padding)
+        ])
 
-        # Pad each max length with tokenized [PAD]
-        if source_padding > 0:
-            source_tokens += [self.source_tokenizer.token_to_id("[PAD]")] * source_padding
-        if target_padding > 0:
-            target_tokens += [self.target_tokenizer.token_to_id("[PAD]")] * target_padding
+        target_tokens = torch.concat([
+            torch.tensor([self.target_tokenizer.token_to_id("[BOS]")]),
+            torch.tensor(target_tokens),
+            torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*target_padding)
+        ])
+
+        label_tokens = torch.concat([
+            torch.tensor(label_tokens),
+            torch.tensor([self.target_tokenizer.token_to_id("[EOS]")]),
+            torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*label_padding)
+        ])
 
         # Return as a dictionary compatible with Hugging Face models
-        input_ids = torch.tensor(source_tokens)
-        output_ids = torch.tensor(target_tokens)
-        return input_ids, output_ids
+        return source_tokens, target_tokens, label_tokens
 
 
 class DataModule(pl.LightningDataModule):
