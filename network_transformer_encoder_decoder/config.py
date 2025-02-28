@@ -32,8 +32,8 @@ class DataConfig:
 
 # Training hyperparameters
 LEARNING_RATE = 0.001
-BATCH_SIZE = 8
-NUM_EPOCHS = 10
+BATCH_SIZE = 64
+NUM_EPOCHS = 100
 
 # Compute related
 ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
@@ -123,7 +123,7 @@ def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512,
 
     # generate callbacks
     callbacks = [MyPrintingCallback(),
-                EarlyStopping(monitor="val_loss"),
+                # EarlyStopping(monitor="val_loss"),
                 ModelCheckpoint(
                 dirpath=CHECKPOINT_DIR,
                 filename='network_transformer_encoder_decoder-{epoch:02d}-{val_loss:.2f}',
