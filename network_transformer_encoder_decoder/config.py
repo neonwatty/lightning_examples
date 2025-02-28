@@ -32,13 +32,14 @@ class DataConfig:
 
 # Training hyperparameters
 LEARNING_RATE = 0.001
-BATCH_SIZE = 128
+BATCH_SIZE = 4
 NUM_EPOCHS = 1
 
 # Compute related
-ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
-DEVICES = [0] if ACCELERATOR == "gpu" else 0
+ACCELERATOR = "mps" #"gpu" if torch.cuda.is_available() else "cpu"
+DEVICES = 0 if ACCELERATOR == "gpu" or ACCELERATOR == "cpu" else 1
 PRECISION = "16-mixed"
+
 
 def save_config_as_json(config, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -94,7 +95,7 @@ def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512,
 
     # Create data configurations
     DATA_CONFIG = DataConfig(
-        num_workers=os.cpu_count(),
+        num_workers=0, #os.cpu_count(),
         vocab_size=vocab_size,
         dataset_name=dataset_name,
         dataset_subset="en-es",

@@ -58,17 +58,24 @@ def load_model(run_dir):
 
 
 def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
-    # Tokenize source input
-    source_tokens = src_tokenizer.encode("[BOS]" + test_input + "[EOS]").ids
-    source_tokens = source_tokens[:max_seq_len]  # Truncate if needed
-    source_padding = max_seq_len - len(source_tokens)
+    # Setup test input
+    test_tokens = src_tokenizer.encode(test_input).ids
+    if len(test_tokens) > max_seq_len - 2:
+        test_tokens = test_tokens[:max_seq_len - 2]
+    test_padding = max_seq_len - len(test_tokens) - 2
 
-    # Pad source tokens if necessary
-    if source_padding > 0:
-        source_tokens += [src_tokenizer.token_to_id("[PAD]")] * source_padding
-    
-    # Convert to tensor
-    source_tokens = torch.tensor(source_tokens, dtype=torch.long).unsqueeze(0)
+    # Initialize source tokens
+    bos_token = torch.tensor([src_tokenizer.token_to_id("[BOS]")])
+    eos_token = torch.tensor([src_tokenizer.token_to_id("[EOS]")])
+    test_padding_tokens = torch.tensor([src_tokenizer.token_to_id("[PAD]")]*test_padding)
+    test_tokens = torch.tensor(test_tokens)
+
+    source_tokens = torch.concat([
+        bos_token,
+        test_tokens,
+        eos_token,
+        test_padding_tokens
+    ]).long().unsqueeze(0)
 
     # precompute the encoder output and re-use for all the decoding steps
     encoder_output = model.encoder(source_tokens)
@@ -86,11 +93,10 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
             # stopping condition
             if decoder_output.size(1) >= max_seq_len:
                 break
-            
+
             # decoder_output: (batch, seq_len)
             print(decoder_output)
             output = model.decoder(decoder_output, encoder_output)
-            print(f'shape of output: {output.shape}')
             predicted_token = torch.argmax(output[:, -1, :], dim=-1).item()
 
             # Append the predicted token
@@ -107,7 +113,7 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
     return tgt_tokenizer.decode(decoder_tokens)
 
 
-def test(data_config, Modemodel_configlConfig, src_tokenizer, tgt_tokenizer, model):
+def test_inference(data_config, model_config, src_tokenizer, tgt_tokenizer, model):
     # Set the maximum sequence length
     max_seq_len = data_config.max_seq_len
 

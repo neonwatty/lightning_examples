@@ -117,24 +117,39 @@ class HuggingFaceDataset(Dataset):
         target_padding = self.max_length - len(target_tokens) - 1 # account for [BOS]
         label_padding = self.max_length - len(label_tokens) - 1 # account for [EOS]
 
+        # Convert to tensors
+        bos_token = torch.tensor([self.source_tokenizer.token_to_id("[BOS]")])
+        eos_token = torch.tensor([self.source_tokenizer.token_to_id("[EOS]")])
+        source_pad_tokens = torch.tensor([self.source_tokenizer.token_to_id("[PAD]")]*source_padding)
+        target_pad_tokens = torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*target_padding)
+        label_pad_tokens = torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*label_padding)
+        source_tokens = torch.tensor(source_tokens)
+        target_tokens = torch.tensor(target_tokens)
+        label_tokens = torch.tensor(label_tokens)
+
+        # Concatenate tokens
         source_tokens = torch.concat([
-            torch.tensor([self.source_tokenizer.token_to_id("[BOS]")]),
-            torch.tensor(source_tokens),
-            torch.tensor([self.source_tokenizer.token_to_id("[EOS]")]),
-            torch.tensor([self.source_tokenizer.token_to_id("[PAD]")]*source_padding)
-        ])
+            bos_token,
+            source_tokens,
+            eos_token,
+            source_pad_tokens
+        ]).long()
 
         target_tokens = torch.concat([
-            torch.tensor([self.target_tokenizer.token_to_id("[BOS]")]),
-            torch.tensor(target_tokens),
-            torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*target_padding)
-        ])
+            bos_token,
+            target_tokens,
+            target_pad_tokens
+        ]).long()
 
         label_tokens = torch.concat([
-            torch.tensor(label_tokens),
-            torch.tensor([self.target_tokenizer.token_to_id("[EOS]")]),
-            torch.tensor([self.target_tokenizer.token_to_id("[PAD]")]*label_padding)
-        ])
+            label_tokens,
+            eos_token,
+            label_pad_tokens
+        ]).long()
+
+        print(f'source tokens', source_tokens)
+        print(f'target tokens', target_tokens)
+        print(f'label tokens', label_tokens)
 
         # Return as a dictionary compatible with Hugging Face models
         return source_tokens, target_tokens, label_tokens

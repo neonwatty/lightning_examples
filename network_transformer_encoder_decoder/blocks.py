@@ -55,7 +55,6 @@ class InputEmbeddings(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         # (batch, seq_len) --> (batch, seq_len, d_model)
-        # Multiply by sqrt(d_model) to scale the embeddings
         return self.embedding(x) * math.sqrt(self.d_model)
 
 
