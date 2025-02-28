@@ -32,12 +32,12 @@ class DataConfig:
 
 # Training hyperparameters
 LEARNING_RATE = 0.001
-BATCH_SIZE = 4
-NUM_EPOCHS = 1
+BATCH_SIZE = 8
+NUM_EPOCHS = 10
 
 # Compute related
-ACCELERATOR = "mps" #"gpu" if torch.cuda.is_available() else "cpu"
-DEVICES = 0 if ACCELERATOR == "gpu" or ACCELERATOR == "cpu" else 1
+ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
+DEVICES = [0] if ACCELERATOR == "gpu" or ACCELERATOR == "cpu" else 1
 PRECISION = "16-mixed"
 
 
@@ -55,13 +55,13 @@ if not os.path.exists("profiler_logs"):
 
 # generate configs
 # dataset_name = "Helsinki-NLP/opus_books" or "neonwatty/opus_books-sample-50"
-def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512, batch_size: int = 128, d_model: int = 512, n_head: int = 8, n_layers: int = 6):
+def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512, batch_size: int = BATCH_SIZE, d_model: int = 512, n_head: int = 8, n_layers: int = 6):
     # create run config
     run_config = {
         "dataset_name": dataset_name,
         "vocab_size": vocab_size,
         "max_seq_len": max_seq_len,
-        "batch_size": batch_size,
+        "batch_size": BATCH_SIZE,
         "d_model": d_model,
         "n_head": n_head,
         "n_layers": n_layers,
@@ -95,7 +95,7 @@ def generate(dataset_name: str, vocab_size: int = 32000, max_seq_len: int = 512,
 
     # Create data configurations
     DATA_CONFIG = DataConfig(
-        num_workers=0, #os.cpu_count(),
+        num_workers=os.cpu_count(),
         vocab_size=vocab_size,
         dataset_name=dataset_name,
         dataset_subset="en-es",

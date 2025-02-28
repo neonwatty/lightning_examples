@@ -52,12 +52,15 @@ def load_model(run_dir):
     model.load_state_dict(checkpoint['state_dict'])
 
     # Set the model to evaluation mode
-    model.eval();
+    # model.eval();
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    transformer.eval()
+    transformer.to(device)
+    return data_config, model_config, src_tokenizer, tgt_tokenizer, model, transformer, device
 
-    return data_config, model_config, src_tokenizer, tgt_tokenizer, model, transformer
 
-
-def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
+def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len, device):
     # Setup test input
     test_tokens = src_tokenizer.encode(test_input).ids
     if len(test_tokens) > max_seq_len - 2:
@@ -75,17 +78,15 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
         test_tokens,
         eos_token,
         test_padding_tokens
-    ]).long().unsqueeze(0)
+    ]).long().unsqueeze(0).to(device)
 
     # precompute the encoder output and re-use for all the decoding steps
-    print(f'source_tokens shape: {source_tokens.shape}')
     encoder_output = model.encoder(source_tokens)
-    print(f'encoder_output shape: {encoder_output.shape}')
 
     # Initialize target sequence with BOS token
     decoder_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
     # decoder_tokens = [tgt_tokenizer.token_to_id("El")]
-    decoder_output = torch.empty(1, 1, dtype=torch.long).fill_(decoder_tokens[0]).type_as(source_tokens)
+    decoder_output = torch.empty(1, 1, dtype=torch.long).fill_(decoder_tokens[0]).type_as(source_tokens).to(device)
     print(f'decoder_output shape: {decoder_output.shape}')
     # Perform inference (greedy decoding)
     with torch.no_grad():
@@ -106,13 +107,13 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
                 break
 
             # Update target tensor
-            decoder_output = torch.tensor(decoder_tokens, dtype=torch.long).unsqueeze(0)
+            decoder_output = torch.tensor(decoder_tokens, dtype=torch.long).unsqueeze(0).to(device)
 
     # Decode and return generated text
     return tgt_tokenizer.decode(decoder_tokens)
 
 
-def test_inference(data_config, model_config, src_tokenizer, tgt_tokenizer, model):
+def test_inference(data_config, model_config, src_tokenizer, tgt_tokenizer, model, device):
     # Set the maximum sequence length
     max_seq_len = data_config.max_seq_len
 
@@ -128,7 +129,7 @@ def test_inference(data_config, model_config, src_tokenizer, tgt_tokenizer, mode
     test_input = "The late owner of this estate was a single man, who lived to a very advanced age, and who for many years of his life, had a constant companion and housekeeper in his sister."
 
     # Perform greedy decoding
-    decoded_output = greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len)
+    decoded_output = greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len, device)
 
     # Print the decoded output
     print(f"Input: {test_input}")
