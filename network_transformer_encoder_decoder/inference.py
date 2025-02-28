@@ -2,7 +2,7 @@ import os
 import pytorch_lightning as pl
 import torch
 from network_transformer_encoder_decoder.model import NN
-from network_transformer_encoder_decoder.blocks import Transformer
+from network_transformer_encoder_decoder.blocks_condensed import Transformer
 from network_transformer_encoder_decoder.config import DataConfig, ModelConfig
 from network_transformer_encoder_decoder.dataset import DataModule
 import json
@@ -78,15 +78,15 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
     ]).long().unsqueeze(0)
 
     # precompute the encoder output and re-use for all the decoding steps
+    print(f'source_tokens shape: {source_tokens.shape}')
     encoder_output = model.encoder(source_tokens)
-    print(source_tokens)
-    print(encoder_output)
+    print(f'encoder_output shape: {encoder_output.shape}')
 
     # Initialize target sequence with BOS token
     decoder_tokens = [tgt_tokenizer.token_to_id("[BOS]")]
     # decoder_tokens = [tgt_tokenizer.token_to_id("El")]
     decoder_output = torch.empty(1, 1, dtype=torch.long).fill_(decoder_tokens[0]).type_as(source_tokens)
-
+    print(f'decoder_output shape: {decoder_output.shape}')
     # Perform inference (greedy decoding)
     with torch.no_grad():
         while True:
@@ -95,7 +95,6 @@ def greedy_decode(model, src_tokenizer, tgt_tokenizer, test_input, max_seq_len):
                 break
 
             # decoder_output: (batch, seq_len)
-            print(decoder_output)
             output = model.decoder(decoder_output, encoder_output)
             predicted_token = torch.argmax(output[:, -1, :], dim=-1).item()
 

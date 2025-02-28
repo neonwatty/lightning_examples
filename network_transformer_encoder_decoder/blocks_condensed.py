@@ -20,6 +20,7 @@ class InputEmbeddings(nn.Module):
         # Multiply by sqrt(d_model) to scale the embeddings
         return self.embedding(x) * math.sqrt(self.d_model)
 
+
 class LayerNorm(nn.LayerNorm):
     def forward(self, x: Tensor) -> Tensor:
         return super().forward(x.float()).type(x.dtype)
@@ -62,7 +63,7 @@ class Encoder(nn.Module):
         self.positional_embedding = PositionalEncoding(d_model, seq_len)
 
         self.ln = LayerNorm(d_model)
-        encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=n_head, dim_feedforward=d_model * 4, dropout=dropout, activation='gelu')
+        encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=n_head, dim_feedforward=d_model * 4, dropout=dropout, activation='gelu', batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=n_layers, norm=self.ln)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -79,13 +80,18 @@ class Decoder(nn.Module):
         self.positional_embedding = PositionalEncoding(d_model, seq_len)
 
         self.ln = LayerNorm(d_model)
-        decoder_layers = nn.TransformerDecoderLayer(d_model=d_model, nhead=n_head, dim_feedforward=d_model * 4, dropout=dropout, activation='gelu')
+        decoder_layers = nn.TransformerDecoderLayer(d_model=d_model, nhead=n_head, dim_feedforward=d_model * 4, dropout=dropout, activation='gelu', batch_first=True)
         self.transformer_decoder = nn.TransformerDecoder(decoder_layers, num_layers=n_layers, norm=self.ln)
+
+    def generate_mask(self, size: int) -> Tensor:
+        mask = (torch.triu(torch.ones(size, size)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
 
     def forward(self, x: Tensor, memory: Tensor) -> Tensor:
         x = self.token_embedding(x)
         x += self.positional_embedding(x)
-        x = self.transformer_decoder(x, memory)
+        x = self.transformer_decoder(x, memory, tgt_mask=self.generate_mask(x.size(1)))
         logits = F.linear(x, self.token_embedding.embedding.weight)
         return logits
 

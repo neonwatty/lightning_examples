@@ -16,8 +16,8 @@ torch.set_float32_matmul_precision("medium")  # to make lightning happy
 if __name__ == "__main__":
     # generate configs
     data_config, model_config, callbacks = generate(
-        dataset_name="Helsinki-NLP/opus_books", vocab_size=320, max_seq_len=128, batch_size=128, d_model=32, n_head=2, n_layers=2
-    )
+        dataset_name="Helsinki-NLP/opus_books", vocab_size=3200, max_seq_len=128, batch_size=128, d_model=32, n_head=2, n_layers=2
+    ) # neonwatty/opus_books-sample-50 or Helsinki-NLP/opus_books
 
     # set profiler
     profiler = PyTorchProfiler(

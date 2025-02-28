@@ -2,7 +2,7 @@ import torch
 from torch import nn, optim
 import torchmetrics
 import pytorch_lightning as pl
-from network_transformer_encoder_decoder.blocks import Transformer
+from network_transformer_encoder_decoder.blocks_condensed import Transformer
 from network_transformer_encoder_decoder.config import ModelConfig
 from network_transformer_encoder_decoder.config import LEARNING_RATE
 
